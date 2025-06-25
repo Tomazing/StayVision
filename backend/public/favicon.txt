@@ -1,0 +1,2 @@
+<!-- This is a placeholder. For a real project, you would convert the SVG to .ico format -->
+<link rel="icon" href="/images/awaze-logo.svg" type="image/svg+xml">

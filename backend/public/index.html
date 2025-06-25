@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>StayVision Backend API</title>
+  <link rel="icon" href="/images/awaze-logo.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/images/awaze-logo.svg">
+  <meta name="theme-color" content="#A8E6CF">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f9f5;
+    }
+    .container {
+      background-color: white;
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #2e7d32;
+      margin-top: 0;
+    }
+    h2 {
+      color: #388e3c;
+      margin-top: 30px;
+    }
+    code {
+      background-color: #f1f1f1;
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+    }
+    pre {
+      background-color: #f8f8f8;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 15px;
+      overflow: auto;
+    }
+    .endpoint {
+      margin-bottom: 15px;
+      border-left: 3px solid #a8e6cf;
+      padding-left: 15px;
+    }
+    .logo {
+      text-align: center;
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .logo img {
+      max-width: 120px;
+      margin-bottom: 15px;
+    }
+    .logo h1 {
+      margin-top: 0;
+    }
+    .method {
+      display: inline-block;
+      padding: 3px 6px;
+      border-radius: 3px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-right: 8px;
+    }
+    .get {
+      background-color: #e3f2fd;
+      color: #0d47a1;
+    }
+    .post {
+      background-color: #e8f5e9;
+      color: #1b5e20;
+    }
+    footer {
+      margin-top: 30px;
+      text-align: center;
+      font-size: 14px;
+      color: #666;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    footer img {
+      max-width: 150px;
+      margin-bottom: 15px;
+    }
+    footer p {
+      margin-top: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <img src="/images/awaze-logo.svg" alt="Awaze Logo" width="120">
+      <h1>StayVision Backend</h1>
+    </div>
+    
+    <p>This is the API server for StayVision, an interactive feature that helps potential guests simulate their stay before booking.</p>
+    
+    <h2>Available Endpoints</h2>
+    
+    <div class="endpoint">
+      <h3><span class="method get">GET</span> /api/health</h3>
+      <p>Check if the API is running properly.</p>
+      <p>Example: <code>GET https://stay-vision-backend.vercel.app/api/health</code></p>
+    </div>
+    
+    <div class="endpoint">
+      <h3><span class="method post">POST</span> /api/simulate/start</h3>
+      <p>Start a new stay simulation for a specific property.</p>
+      <p>Required payload:</p>
+      <pre>{
+  "propertyId": "wildhouse-farm"
+}</pre>
+      <p>Example usage:</p>
+      <pre>fetch('https://stay-vision-backend.vercel.app/api/simulate/start', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    propertyId: 'wildhouse-farm'
+  })
+})</pre>
+    </div>
+    
+    <div class="endpoint">
+      <h3><span class="method post">POST</span> /api/simulate/step</h3>
+      <p>Process a step in the simulation with the user's answers.</p>
+      <p>Required payload:</p>
+      <pre>{
+  "propertyId": "wildhouse-farm",
+  "currentStep": "initial",
+  "answer": "Family of 4 with two teenagers. We love hiking and local food.",
+  "answers": {}
+}</pre>
+    </div>
+    
+    <div class="endpoint">
+      <h3><span class="method post">POST</span> /api/feedback</h3>
+      <p>Submit feedback about the simulation experience.</p>
+      <p>Required payload:</p>
+      <pre>{
+  "propertyId": "wildhouse-farm",
+  "rating": 8,
+  "feedback": "positive",
+  "answers": {
+    "initial": "Family of 4 with two teenagers. We love hiking and local food."
+  }
+}</pre>
+    </div>
+    
+    <h2>Testing the API</h2>
+    <p>You can test these endpoints using tools like:</p>
+    <ul>
+      <li>Postman</li>
+      <li>cURL</li>
+      <li>Browser developer console</li>
+      <li>Any HTTP client that can make POST requests with JSON bodies</li>
+    </ul>
+    
+    <h2>Available Properties</h2>
+    <p>For demo purposes, the following property IDs are available:</p>
+    <ul>
+      <li><code>wildhouse-farm</code> - Wildhouse Farm in Milnrow</li>
+      <li><code>coastal-retreat</code> - Coastal Retreat</li>
+      <li><code>mountain-lodge</code> - Mountain Lodge</li>
+    </ul>
+    
+    <footer>
+      <img src="/images/awaze-logo-landscape.svg" alt="Awaze Logo" width="150">
+      <p>StayVision API - Awaze Hackathon 2025<br>
+      <small>Developed for demonstration purposes</small></p>
+    </footer>
+  </div>
+</body>
+</html>

@@ -24,12 +24,12 @@ export const HomePage: React.FC<HomePageProps> = ({ properties, onSelectProperty
               <AwazeLogo size="sm" className="text-green-500" />
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">StayVision</h1>
-                <p className="text-sm text-gray-600">by Awaze</p>
+                <p className="text-sm text-gray-600">Experience your stay before you book</p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-sm text-gray-600">Experience Your Stay</p>
-              <p className="text-xs text-gray-500">Before You Book</p>
+              <p className="text-sm text-gray-600">Awaze Hackathon 2025</p>
+              <p className="text-xs text-gray-500">By Tom Lai</p>
             </div>
           </div>
         </div>
@@ -168,11 +168,14 @@ export const HomePage: React.FC<HomePageProps> = ({ properties, onSelectProperty
             <AwazeLogo size="sm" className="text-green-400" />
             <div>
               <h3 className="text-xl font-bold">StayVision</h3>
-              <p className="text-gray-400 text-sm">Powered by Awaze</p>
+              <p className="text-gray-400 text-sm">Powered by Tom Lai</p>
             </div>
           </div>
           <p className="text-center text-gray-400">
-            © 2025 Awaze. Experience your stay before you book.
+            © 2025 Awaze Hackathon 2025
+          </p>
+          <p className="text-sm text-center text-gray-400">
+            Developed for demonstration purposes only. All rights reserved.
           </p>
         </div>
       </footer>

@@ -33,6 +33,9 @@ app.use(express.json());
 app.use(express.static(join(__dirname, 'public')));
 
 // Routes
+// The root path will automatically serve index.html from the public directory
+// because we've configured express.static middleware above
+
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'StayVision API is running' });
 });
