@@ -84,3 +84,47 @@ The frontend communicates with this API to:
 - The server uses mock property data for the hackathon demo
 - In a production environment, you would connect to a database for property information
 - The OpenAI integration can be customized with different models and prompts
+
+## Deploying to Vercel
+
+This backend is configured for easy deployment to Vercel:
+
+1. Install the Vercel CLI:
+```bash
+npm install -g vercel
+```
+
+2. Login to Vercel:
+```bash
+vercel login
+```
+
+3. Deploy from the backend directory:
+```bash
+cd backend
+vercel
+```
+
+4. Follow the prompts in the CLI:
+   - Set up and deploy "Y"
+   - Link to existing project? "N"
+   - What's your project's name? "stayvision-backend" (or your preferred name)
+   - In which directory is your code located? "./" (current directory)
+   - Want to override the settings? "N" 
+
+5. For production deployment:
+```bash
+vercel --prod
+```
+
+### Environment Variables
+
+Make sure to set up these environment variables in your Vercel project settings:
+
+- `OPENAI_API_KEY`: OpenAI API key
+
+Can set these up during deployment or in the Vercel dashboard after deployment.
+
+### Vercel Configuration
+
+The `vercel.json` file in this directory configures the deployment settings, ensuring that all API routes are correctly handled by the Express application.

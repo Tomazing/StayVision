@@ -11,44 +11,15 @@ interface SimulationFlowProps {
   onBack: () => void;
 }
 
-// Initial step definitions - these will be replaced by API responses in real usage
-const simulationSteps: Omit<SimulationStep, 'userAnswer' | 'isCompleted'>[] = [
-  {
-    id: 'initial',
-    question: `Welcome to StayVision's "Simulate Your Stay" at Wildhouse Farm!\n\nDates: Mon 21 July 2025 – Thu 24 July 2025 (3 nights)\nSleeps: 6 | Bedrooms: 3 | Dogs allowed: up to 3\n\nTo tailor your story-like preview, tell me a bit about your trip:\n• Who's coming? (e.g. family with young kids, friends, couple + dog)\n• What do you love to do? (e.g. hiking, BBQs, local dining)\n• Any special requests or must-haves? (e.g. pet-friendly cafés, cycle storage)`
-  },
-  {
-    id: 'group-size',
-    question: 'Great—let\'s tailor your 3-day preview just for you and your parents. A few quick questions:\n\nWill it be just the three of you (no pets or additional guests)?'
-  },
-  {
-    id: 'pace',
-    question: 'What pace suits you best—gentle countryside strolls, popping into nearby towns/city, or a mix of both?'
-  },
-  {
-    id: 'dining',
-    question: 'Would you prefer cooking/BBQs at the farmhouse or sampling local restaurants for most meals?'
-  },
-  {
-    id: 'transport',
-    question: 'Will you have a rental car to drive around, or are you planning to use public transport (trains/buses)?'
-  },
-  {
-    id: 'evening-preference',
-    question: 'When you explore local places at night, do you prefer lively pubs/bars and live music, or quieter evening strolls and cosy cafés?'
-  },
-  {
-    id: 'shopping',
-    question: 'For the one cooking night, would you like recommendations for nearby markets or farm shops to pick up fresh local produce?'
-  }
-];
-
 export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [currentStepId, setCurrentStepId] = useState('initial');
-  const [steps, setSteps] = useState<SimulationStep[]>(
-    simulationSteps.map(step => ({ ...step, userAnswer: '', isCompleted: false }))
-  );
+  const [steps, setSteps] = useState<SimulationStep[]>([{
+    id: 'initial',
+    question: `Welcome to StayVision's "Simulate Your Stay" at ${property.name}!\n\nDates: Mon 21 July 2025 – Thu 24 July 2025 (3 nights)\nSleeps: ${property.sleeps} | Bedrooms: ${property.bedrooms} | Dogs allowed: ${property.dogsAllowed ? `up to ${property.dogsAllowed}` : 'No'}\n\nTo tailor your story-like preview, tell me a bit about your trip:\n• Who's coming? (e.g. family with young kids, friends, couple + dog)\n• What do you love to do? (e.g. hiking, BBQs, local dining)\n• Any special requests or must-haves? (e.g. pet-friendly cafés, cycle storage)`,
+    userAnswer: '',
+    isCompleted: false
+  }]);
   const [currentAnswer, setCurrentAnswer] = useState('');
   const [isThinking, setIsThinking] = useState(false);
   const [showResults, setShowResults] = useState(false);
@@ -155,14 +126,9 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
       console.error('Error submitting answer:', error);
       setApiError('Something went wrong. Please try again.');
       
-      // Fallback: move to the next predefined step
-      if (currentStepIndex < steps.length - 1) {
-        setCurrentStepIndex(currentStepIndex + 1);
-        setCurrentStepId(steps[currentStepIndex + 1].id);
-      } else {
-        // If we're at the last step, generate mock results
-        generateSimulationResults();
-      }
+      // When an error occurs, we'll generate a simulated response based on current answers
+      // This simulates the LLM deciding what to do next
+      generateSimulationResults();
     } finally {
       setIsThinking(false);
     }
@@ -262,7 +228,13 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
           setShowResults(false);
           setCurrentStepIndex(0);
           setCurrentStepId('initial');
-          setSteps(simulationSteps.map(step => ({ ...step, userAnswer: '', isCompleted: false })));
+          // Reset to just the initial question
+          setSteps([{
+            id: 'initial',
+            question: `Welcome to StayVision's "Simulate Your Stay" at ${property.name}!\n\nDates: Mon 21 July 2025 – Thu 24 July 2025 (3 nights)\nSleeps: ${property.sleeps} | Bedrooms: ${property.bedrooms} | Dogs allowed: ${property.dogsAllowed ? `up to ${property.dogsAllowed}` : 'No'}\n\nTo tailor your story-like preview, tell me a bit about your trip:\n• Who's coming? (e.g. family with young kids, friends, couple + dog)\n• What do you love to do? (e.g. hiking, BBQs, local dining)\n• Any special requests or must-haves? (e.g. pet-friendly cafés, cycle storage)`,
+            userAnswer: '',
+            isCompleted: false
+          }]);
           setSimulationResult(null);
           setAllAnswers({});
         }}

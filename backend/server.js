@@ -22,7 +22,13 @@ const openai = new OpenAI({
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? [process.env.FRONTEND_URL] // Use the frontend URL in production
+    : 'http://localhost:5173', // Default Vite dev server port
+  methods: ['GET', 'POST'],
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.static(join(__dirname, 'public')));
 
@@ -427,9 +433,11 @@ function generateMockSimulationResults(property, answers) {
   };
 }
 
-// Start the server
-app.listen(port, () => {
-  console.log(`StayVision API server running on port ${port}`);
-});
+// Start the server - only in development mode, not in Vercel production
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(port, () => {
+    console.log(`StayVision API server running on port ${port}`);
+  });
+}
 
 export default app;
