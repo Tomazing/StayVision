@@ -11,7 +11,7 @@ interface HomePageProps {
 
 export const HomePage: React.FC<HomePageProps> = ({ properties, onSelectProperty }) => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-mint-50 to-green-100">
+    <div className="min-h-screen bg-linear-to-br from-green-50 via-mint-50 to-green-100">
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}

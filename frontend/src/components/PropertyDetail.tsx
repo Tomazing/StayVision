@@ -19,7 +19,7 @@ export const PropertyDetail: React.FC<PropertyDetailProps> = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="min-h-screen bg-gradient-to-br from-green-50 to-mint-50"
+      className="min-h-screen bg-linear-to-br from-green-50 to-mint-50"
     >
       <div className="container mx-auto px-4 py-8">
         <motion.button
@@ -38,7 +38,7 @@ export const PropertyDetail: React.FC<PropertyDetailProps> = ({
               alt={property.name}
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-t from-black/50 to-transparent" />
             <div className="absolute bottom-6 left-6 text-white">
               <h1 className="text-4xl font-bold mb-2">{property.name}</h1>
               <div className="flex items-center gap-2 text-lg">
@@ -115,7 +115,7 @@ export const PropertyDetail: React.FC<PropertyDetailProps> = ({
                   
                   <motion.button
                     onClick={onStartSimulation}
-                    className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-4 px-6 rounded-xl text-lg shadow-lg transition-all duration-300"
+                    className="w-full bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-4 px-6 rounded-xl text-lg shadow-lg transition-all duration-300"
                     whileHover={{ scale: 1.02, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)" }}
                     whileTap={{ scale: 0.98 }}
                   >

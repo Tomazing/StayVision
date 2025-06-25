@@ -49,7 +49,7 @@ export const SimulationResults: React.FC<SimulationResultsProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-mint-50">
+    <div className="min-h-screen bg-linear-to-br from-green-50 to-mint-50">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -119,7 +119,7 @@ export const SimulationResults: React.FC<SimulationResultsProps> = ({
               transition={{ delay: dayIndex * 0.2 }}
               className="bg-white rounded-2xl shadow-lg overflow-hidden"
             >
-              <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6">
+              <div className="bg-linear-to-r from-green-500 to-green-600 text-white p-6">
                 <h3 className="text-xl font-bold">Day {day.day}</h3>
                 <p className="text-green-100">{day.title}</p>
               </div>
@@ -134,7 +134,7 @@ export const SimulationResults: React.FC<SimulationResultsProps> = ({
                       transition={{ delay: (dayIndex * 0.2) + (actIndex * 0.1) }}
                       className="flex gap-3"
                     >
-                      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${getActivityColor(activity.type)}`}>
+                      <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${getActivityColor(activity.type)}`}>
                         {getActivityIcon(activity.type)}
                       </div>
                       <div className="flex-1">
@@ -165,7 +165,7 @@ export const SimulationResults: React.FC<SimulationResultsProps> = ({
             <div className="space-y-3">
               {result.personalizedTips.map((tip, index) => (
                 <div key={index} className="flex items-start gap-3">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0" />
+                  <div className="w-2 h-2 bg-green-500 rounded-full mt-2 shrink-0" />
                   <p className="text-gray-700 text-sm">{tip}</p>
                 </div>
               ))}
@@ -182,7 +182,7 @@ export const SimulationResults: React.FC<SimulationResultsProps> = ({
             <div className="space-y-3">
               {result.highlights.map((highlight, index) => (
                 <div key={index} className="flex items-start gap-3">
-                  <Star className="w-4 h-4 text-yellow-500 mt-1 flex-shrink-0" />
+                  <Star className="w-4 h-4 text-yellow-500 mt-1 shrink-0" />
                   <p className="text-gray-700 text-sm">{highlight}</p>
                 </div>
               ))}

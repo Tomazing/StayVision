@@ -166,7 +166,7 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-100 via-green-50 to-mint-100 flex flex-col relative overflow-hidden">
+    <div className="min-h-screen bg-linear-to-br from-green-100 via-green-50 to-mint-100 flex flex-col relative overflow-hidden">
       {/* Floating Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
@@ -252,18 +252,18 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
                 className="relative"
               >
                 {/* Decorative Elements */}
-                <div className="absolute -top-4 -left-4 w-8 h-8 bg-gradient-to-br from-green-400 to-green-500 rounded-full opacity-20 blur-sm" />
-                <div className="absolute -bottom-4 -right-4 w-6 h-6 bg-gradient-to-br from-mint-400 to-mint-500 rounded-full opacity-30 blur-sm" />
+                <div className="absolute -top-4 -left-4 w-8 h-8 bg-linear-to-br from-green-400 to-green-500 rounded-full opacity-20 blur-sm" />
+                <div className="absolute -bottom-4 -right-4 w-6 h-6 bg-linear-to-br from-mint-400 to-mint-500 rounded-full opacity-30 blur-sm" />
                 
                 <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-green-100/50 relative overflow-hidden">
                   {/* Subtle gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 to-mint-50/30 rounded-3xl" />
+                  <div className="absolute inset-0 bg-linear-to-br from-green-50/50 to-mint-50/30 rounded-3xl" />
                   
                   <div className="relative z-10">
                     <div className="flex items-center gap-3 mb-6">
-                      <div className="w-3 h-3 bg-gradient-to-r from-green-400 to-green-500 rounded-full animate-pulse" />
-                      <div className="w-2 h-2 bg-gradient-to-r from-mint-400 to-mint-500 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }} />
-                      <div className="w-1.5 h-1.5 bg-gradient-to-r from-green-300 to-green-400 rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
+                      <div className="w-3 h-3 bg-linear-to-r from-green-400 to-green-500 rounded-full animate-pulse" />
+                      <div className="w-2 h-2 bg-linear-to-r from-mint-400 to-mint-500 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }} />
+                      <div className="w-1.5 h-1.5 bg-linear-to-r from-green-300 to-green-400 rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
                     </div>
 
                     <motion.h2 
@@ -302,7 +302,7 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
                       <motion.button
                         onClick={handleSubmitAnswer}
                         disabled={!currentAnswer.trim()}
-                        className="w-full bg-gradient-to-r from-green-500 via-green-600 to-green-500 hover:from-green-600 hover:via-green-700 hover:to-green-600 disabled:from-gray-300 disabled:via-gray-400 disabled:to-gray-300 text-white font-semibold py-5 px-8 rounded-2xl flex items-center justify-center gap-3 transition-all duration-500 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform-gpu"
+                        className="w-full bg-linear-to-r from-green-500 via-green-600 to-green-500 hover:from-green-600 hover:via-green-700 hover:to-green-600 disabled:from-gray-300 disabled:via-gray-400 disabled:to-gray-300 text-white font-semibold py-5 px-8 rounded-2xl flex items-center justify-center gap-3 transition-all duration-500 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform-gpu"
                         whileHover={currentAnswer.trim() ? { 
                           scale: 1.02, 
                           boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" 
@@ -336,7 +336,7 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
               >
                 {/* Animated background pattern */}
                 <div className="absolute inset-0 opacity-5">
-                  <div className="absolute inset-0 bg-gradient-to-r from-green-400 via-mint-400 to-green-400 animate-pulse" />
+                  <div className="absolute inset-0 bg-linear-to-r from-green-400 via-mint-400 to-green-400 animate-pulse" />
                 </div>
                 
                 <div className="relative z-10">
@@ -365,7 +365,7 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
                     {[0, 1, 2].map((i) => (
                       <motion.div
                         key={i}
-                        className="w-3 h-3 bg-gradient-to-r from-green-400 to-green-500 rounded-full"
+                        className="w-3 h-3 bg-linear-to-r from-green-400 to-green-500 rounded-full"
                         animate={{
                           scale: [1, 1.2, 1],
                           opacity: [0.5, 1, 0.5]
