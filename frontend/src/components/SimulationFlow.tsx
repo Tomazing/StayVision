@@ -4,12 +4,14 @@ import { ArrowLeft, Send, Sparkles } from 'lucide-react';
 import { Property, SimulationStep, SimulationResult } from '../types';
 import { AwazeLogo } from './AwazeLogo';
 import { SimulationResults } from './SimulationResults';
+import { simulationService } from '../services/simulationService';
 
 interface SimulationFlowProps {
   property: Property;
   onBack: () => void;
 }
 
+// Initial step definitions - these will be replaced by API responses in real usage
 const simulationSteps: Omit<SimulationStep, 'userAnswer' | 'isCompleted'>[] = [
   {
     id: 'initial',
@@ -43,6 +45,7 @@ const simulationSteps: Omit<SimulationStep, 'userAnswer' | 'isCompleted'>[] = [
 
 export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [currentStepId, setCurrentStepId] = useState('initial');
   const [steps, setSteps] = useState<SimulationStep[]>(
     simulationSteps.map(step => ({ ...step, userAnswer: '', isCompleted: false }))
   );
@@ -50,6 +53,38 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
   const [isThinking, setIsThinking] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
+  const [allAnswers, setAllAnswers] = useState<Record<string, string>>({});
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  // Initialize the simulation with the first question from the API
+  useEffect(() => {
+    const initializeSimulation = async () => {
+      try {
+        setIsThinking(true);
+        const response = await simulationService.startSimulation(property.id);
+        
+        if (response.success) {
+          // Update the first question with the API response
+          const initialStep = {
+            id: response.step,
+            question: response.question,
+            userAnswer: '',
+            isCompleted: false
+          };
+          
+          setSteps([initialStep, ...steps.slice(1)]);
+          setCurrentStepId(response.step);
+        }
+      } catch (error) {
+        console.error('Failed to initialize simulation:', error);
+        setApiError('Could not start the simulation. Using fallback questions.');
+      } finally {
+        setIsThinking(false);
+      }
+    };
+    
+    initializeSimulation();
+  }, [property.id]);
 
   const currentStep = steps[currentStepIndex];
 
@@ -64,89 +99,157 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
       isCompleted: true
     };
     setSteps(updatedSteps);
+    
+    // Update all answers record
+    const updatedAnswers = { ...allAnswers, [currentStepId]: currentAnswer };
+    setAllAnswers(updatedAnswers);
+    
     setCurrentAnswer('');
 
     // Show thinking animation
     setIsThinking(true);
 
-    // Simulate AI processing time
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    setIsThinking(false);
-
-    // Check if we're at the last step
-    if (currentStepIndex === steps.length - 1) {
-      // Generate simulation results
-      generateSimulationResults();
-    } else {
-      // Move to next step
-      setCurrentStepIndex(currentStepIndex + 1);
+    try {
+      // Call the API with the current step and answer
+      const response = await simulationService.submitStepAnswer(
+        property.id,
+        currentStepId,
+        currentAnswer,
+        updatedAnswers
+      );
+      
+      if (response.completed) {
+        // If the simulation is complete, show the results
+        setSimulationResult(response.results || null);
+        setShowResults(true);
+      } else if (response.step && response.question) {
+        // If we have a next step, add it to the steps array if it doesn't exist yet
+        const existingStepIndex = steps.findIndex(s => s.id === response.step);
+        
+        if (existingStepIndex >= 0) {
+          // If the step already exists, just update its question
+          const nextSteps = [...updatedSteps];
+          nextSteps[existingStepIndex] = {
+            ...nextSteps[existingStepIndex],
+            question: response.question
+          };
+          setSteps(nextSteps);
+          setCurrentStepIndex(existingStepIndex);
+        } else {
+          // If it's a new step, add it to the array
+          const newStep: SimulationStep = {
+            id: response.step,
+            question: response.question,
+            userAnswer: '',
+            isCompleted: false
+          };
+          
+          const nextSteps = [...updatedSteps, newStep];
+          setSteps(nextSteps);
+          setCurrentStepIndex(currentStepIndex + 1);
+        }
+        
+        setCurrentStepId(response.step);
+      }
+    } catch (error) {
+      console.error('Error submitting answer:', error);
+      setApiError('Something went wrong. Please try again.');
+      
+      // Fallback: move to the next predefined step
+      if (currentStepIndex < steps.length - 1) {
+        setCurrentStepIndex(currentStepIndex + 1);
+        setCurrentStepId(steps[currentStepIndex + 1].id);
+      } else {
+        // If we're at the last step, generate mock results
+        generateSimulationResults();
+      }
+    } finally {
+      setIsThinking(false);
     }
   };
 
   const generateSimulationResults = async () => {
     setIsThinking(true);
     
-    // Simulate longer processing for final results
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    const mockResult: SimulationResult = {
-      itinerary: [
-        {
-          day: 1,
-          title: 'Graduation & Family Time',
-          activities: [
-            { time: '14:00', description: 'Arrive by bus from Rochdale station, drop bags in the grand entrance hall, then unwind on the cosy lounge sofas by the wood burner.', type: 'arrival' },
-            { time: '15:00', description: 'Light lunch next door at the farmhouse\'s Italian restaurant (fresh pasta & gelato).', type: 'meal' },
-            { time: '16:30', description: 'Catch the local bus/train via Manchester to Huddersfield campus for your ceremony—congratulations grad!', type: 'activity' },
-            { time: '19:30', description: 'Return to Wildhouse Farm, change into something comfy, then celebrate with a family toast on the patio overlooking the garden.', type: 'rest' },
-            { time: '20:00', description: 'Evening stroll through Milnrow village—pop into a friendly local pub ("The White Lion") for a nightcap or a hot chocolate at a riverside café.', type: 'activity' }
-          ]
-        },
-        {
-          day: 2,
-          title: 'Markets, Lakeside & Mum\'s Feast',
-          activities: [
-            { time: '08:30', description: 'Breakfast in your farmhouse kitchen (local eggs, homemade preserves).', type: 'meal' },
-            { time: '10:00', description: 'Bus to Rochdale Market—pick up Cheshire cheese, local bacon, seasonal veg and artisan bread for tonight\'s dinner.', type: 'activity' },
-            { time: '12:00', description: 'Picnic by Hollingworth Lake: gentle lakeside walk, then your market haul on a picnic blanket.', type: 'meal' },
-            { time: '14:00', description: 'Short tram ride to Piethorne Valley: easy riverside stroll amid wildflowers.', type: 'activity' },
-            { time: '16:00', description: 'Back at the cottage—store boots in the boot room, pour tea in the bay-window dining room, then Mum begins cooking her signature stir-fry with your fresh finds.', type: 'rest' },
-            { time: '19:00', description: 'Family dinner around the farmhouse table—share graduation stories as the sun sets.', type: 'meal' },
-            { time: '21:00', description: 'Board games or Smart TV movie night by the fire.', type: 'rest' }
-          ]
-        },
-        {
-          day: 3,
-          title: 'Manchester Highlights & Pubs',
-          activities: [
-            { time: '09:00', description: 'Quick farmhouse breakfast, then catch the train from Rochdale to Manchester Victoria.', type: 'meal' },
-            { time: '10:00', description: 'Northern Quarter coffee at Takk, followed by street-art hunting.', type: 'activity' },
-            { time: '12:30', description: 'Lunch at Bundobust (Indian street-food – a UK twist your parents will love).', type: 'meal' },
-            { time: '14:00', description: 'Explore the Science & Industry Museum\'s interactive galleries.', type: 'activity' },
-            { time: '16:30', description: 'Return to Wildhouse Farm—freshen up in your super-king or twin bedroom.', type: 'rest' },
-            { time: '18:00', description: 'Bus into Milnrow for a pint at The White Lion or live-music night at The Hop.', type: 'activity' },
-            { time: '20:00', description: 'Stroll back under the stars, then nightcap in the lounge.', type: 'rest' }
-          ]
-        }
-      ],
-      personalizedTips: [
-        'The Italian restaurant next door offers authentic cuisine your parents will appreciate',
-        'Rochdale Market has excellent fresh produce for your mum\'s cooking night',
-        'Public transport connections to Manchester are frequent and reliable',
-        'The White Lion pub has a welcoming atmosphere for international visitors'
-      ],
-      highlights: [
-        'Perfect blend of family celebration and cultural exploration',
-        'Easy access to both countryside and city experiences',
-        'Authentic local dining and home cooking opportunities',
-        'Comfortable base with all amenities for multi-generational travel'
-      ]
-    };
+    try {
+      // Call the API to generate final results
+      const response = await simulationService.submitStepAnswer(
+        property.id,
+        currentStepId,
+        currentAnswer,
+        allAnswers
+      );
+      
+      if (response.completed && response.results) {
+        setSimulationResult(response.results);
+        setShowResults(true);
+      } else {
+        throw new Error('Failed to generate results');
+      }
+    } catch (error) {
+      console.error('Error generating simulation results:', error);
+      setApiError('Could not generate your stay experience. Using sample data.');
+      
+      // Fallback mock data
+      const mockResult: SimulationResult = {
+        itinerary: [
+          {
+            day: 1,
+            title: 'Graduation & Family Time',
+            activities: [
+              { time: '14:00', description: 'Arrive by bus from Rochdale station, drop bags in the grand entrance hall, then unwind on the cosy lounge sofas by the wood burner.', type: 'arrival' },
+              { time: '15:00', description: 'Light lunch next door at the farmhouse\'s Italian restaurant (fresh pasta & gelato).', type: 'meal' },
+              { time: '16:30', description: 'Catch the local bus/train via Manchester to Huddersfield campus for your ceremony—congratulations grad!', type: 'activity' },
+              { time: '19:30', description: 'Return to Wildhouse Farm, change into something comfy, then celebrate with a family toast on the patio overlooking the garden.', type: 'rest' },
+              { time: '20:00', description: 'Evening stroll through Milnrow village—pop into a friendly local pub ("The White Lion") for a nightcap or a hot chocolate at a riverside café.', type: 'activity' }
+            ]
+          },
+          {
+            day: 2,
+            title: 'Markets, Lakeside & Mum\'s Feast',
+            activities: [
+              { time: '08:30', description: 'Breakfast in your farmhouse kitchen (local eggs, homemade preserves).', type: 'meal' },
+              { time: '10:00', description: 'Bus to Rochdale Market—pick up Cheshire cheese, local bacon, seasonal veg and artisan bread for tonight\'s dinner.', type: 'activity' },
+              { time: '12:00', description: 'Picnic by Hollingworth Lake: gentle lakeside walk, then your market haul on a picnic blanket.', type: 'meal' },
+              { time: '14:00', description: 'Short tram ride to Piethorne Valley: easy riverside stroll amid wildflowers.', type: 'activity' },
+              { time: '16:00', description: 'Back at the cottage—store boots in the boot room, pour tea in the bay-window dining room, then Mum begins cooking her signature stir-fry with your fresh finds.', type: 'rest' },
+              { time: '19:00', description: 'Family dinner around the farmhouse table—share graduation stories as the sun sets.', type: 'meal' },
+              { time: '21:00', description: 'Board games or Smart TV movie night by the fire.', type: 'rest' }
+            ]
+          },
+          {
+            day: 3,
+            title: 'Manchester Highlights & Pubs',
+            activities: [
+              { time: '09:00', description: 'Quick farmhouse breakfast, then catch the train from Rochdale to Manchester Victoria.', type: 'meal' },
+              { time: '10:00', description: 'Northern Quarter coffee at Takk, followed by street-art hunting.', type: 'activity' },
+              { time: '12:30', description: 'Lunch at Bundobust (Indian street-food – a UK twist your parents will love).', type: 'meal' },
+              { time: '14:00', description: 'Explore the Science & Industry Museum\'s interactive galleries.', type: 'activity' },
+              { time: '16:30', description: 'Return to Wildhouse Farm—freshen up in your super-king or twin bedroom.', type: 'rest' },
+              { time: '18:00', description: 'Bus into Milnrow for a pint at The White Lion or live-music night at The Hop.', type: 'activity' },
+              { time: '20:00', description: 'Stroll back under the stars, then nightcap in the lounge.', type: 'rest' }
+            ]
+          }
+        ],
+        personalizedTips: [
+          'The Italian restaurant next door offers authentic cuisine your parents will appreciate',
+          'Rochdale Market has excellent fresh produce for your mum\'s cooking night',
+          'Public transport connections to Manchester are frequent and reliable',
+          'The White Lion pub has a welcoming atmosphere for international visitors'
+        ],
+        highlights: [
+          'Perfect blend of family celebration and cultural exploration',
+          'Easy access to both countryside and city experiences',
+          'Authentic local dining and home cooking opportunities',
+          'Comfortable base with all amenities for multi-generational travel'
+        ]
+      };
 
-    setSimulationResult(mockResult);
-    setIsThinking(false);
-    setShowResults(true);
+      setSimulationResult(mockResult);
+      setShowResults(true);
+    } finally {
+      setIsThinking(false);
+    }
   };
 
   if (showResults && simulationResult) {
@@ -158,8 +261,10 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
         onRestart={() => {
           setShowResults(false);
           setCurrentStepIndex(0);
+          setCurrentStepId('initial');
           setSteps(simulationSteps.map(step => ({ ...step, userAnswer: '', isCompleted: false })));
           setSimulationResult(null);
+          setAllAnswers({});
         }}
       />
     );

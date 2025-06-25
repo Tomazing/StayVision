@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Download, Share2, ThumbsUp, ThumbsDown, Star, Clock, MapPin, Utensils, Home, Plane } from 'lucide-react';
-import { Property, SimulationResult } from '../types';
+import { ArrowLeft, Star, Clock, Plane, Utensils, MapPin, Home, Download, Share2, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Property, SimulationResult, DayItinerary, Activity } from '../types';
+import { simulationService } from '../services/simulationService';
 
 interface SimulationResultsProps {
   property: Property;
@@ -19,6 +20,7 @@ export const SimulationResults: React.FC<SimulationResultsProps> = ({
   const [feedback, setFeedback] = useState<'positive' | 'negative' | null>(null);
   const [rating, setRating] = useState<number>(0);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const getActivityIcon = (type: string) => {
     switch (type) {
@@ -42,10 +44,25 @@ export const SimulationResults: React.FC<SimulationResultsProps> = ({
     }
   };
 
-  const handleFeedbackSubmit = () => {
-    setShowFeedback(true);
-    // Here you would typically send the feedback to your backend
-    console.log('Feedback submitted:', { feedback, rating });
+  const handleFeedbackSubmit = async () => {
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      await simulationService.submitFeedback({
+        propertyId: property.id,
+        rating,
+        feedback,
+        answers: {} // We would collect all answers from the flow in a real app
+      });
+      
+      setShowFeedback(true);
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

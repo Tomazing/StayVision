@@ -1,0 +1,20 @@
+{
+  "name": "stayvision-awaze-backend",
+  "version": "0.1.0",
+  "description": "Backend server for StayVision Awaze Hackathon project",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.1",
+    "express": "^4.19.1",
+    "openai": "^4.30.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3"
+  }
+}
