@@ -157,8 +157,8 @@ app.post('/api/getResponseFromLLM', async (req, res) => {
         if (customSystemPrompt) {
           const completion = await openai.chat.completions.create({
             model: "gpt-4o-mini",
-            messages: [systemPrompt],
-            max_tokens: 300
+            messages: [systemPrompt]
+            // max_tokens: 300
           });
           
           conversationHistory.push({
@@ -209,8 +209,8 @@ app.post('/api/getResponseFromLLM', async (req, res) => {
     // Otherwise, get the next assistant response
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: conversationHistory,
-      max_tokens: 300
+      messages: conversationHistory
+      // max_tokens: 300
     });
     
     // Add the assistant's response to the conversation
