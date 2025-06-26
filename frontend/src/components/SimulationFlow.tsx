@@ -90,7 +90,7 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
         
         // Check if the response indicates that it is ready to generate the experience
         // Or if have already reached the maximum of 3 follow-up questions
-        if (responseText.includes("ready to generate your staying experience") || currentStepIndex >= 3) {
+        if (responseText.includes("ready to generate your staying experience") || currentStepIndex >= 2) {
           // Generate final simulation results
           const finalPrompt = getFinalPrompt(property, updatedAnswers);
           
