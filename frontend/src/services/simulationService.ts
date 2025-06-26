@@ -8,12 +8,14 @@ export interface Message {
   content: string;
 }
 
-export interface ConversationResponse {
+export interface LLMResponse {
   success: boolean;
   property: any;
   messages: Message[];
   completed: boolean;
   results?: SimulationResult;
+  step?: string;
+  question?: string;
 }
 
 export interface FeedbackRequest {
@@ -25,90 +27,17 @@ export interface FeedbackRequest {
 
 export const simulationService = {
   /**
-   * Start a simulation for a property
+   * Get LLM response for a property
    */
-  startSimulation: async (propertyId: string, systemPrompt?: string): Promise<any> => {
-    const response = await simulationService.conversation(propertyId, [], undefined, systemPrompt);
-    
-    // Format the response to match what SimulationFlow expects
-    return {
-      success: response.success,
-      step: 'initial',
-      property: response.property,
-      question: response.messages.find(m => m.role === 'assistant')?.content || ''
-    };
-  },
-  
-  /**
-   * Submit an answer for a step in the simulation
-   */
-  submitStepAnswer: async (
+  getLLMResponse: async (
     propertyId: string,
-    currentStep: string,
-    answer: string,
-    answers: Record<string, string>,
-    systemPrompt?: string
-  ): Promise<any> => {
-    // Build conversation history from past answers
-    const messages: Message[] = [];
-    
-    // Add past messages based on answers
-    Object.entries(answers).forEach(([step, answer]) => {
-      if (step !== currentStep) { // Skip the current answer as we'll add it below
-        messages.push({
-          role: 'user',
-          content: answer
-        });
-        
-        // Add a simple assistant response as a placeholder
-        messages.push({
-          role: 'assistant',
-          content: `Thanks for sharing that information about ${step}.`
-        });
-      }
-    });
-    
-    // Call conversation API with history and new message
-    const response = await simulationService.conversation(
-      propertyId,
-      messages,
-      answer,
-      systemPrompt
-    );
-    
-    // Format the response to match what SimulationFlow expects
-    return {
-      success: response.success,
-      step: currentStep === 'initial' ? 'group-size' : 'next-' + currentStep,
-      property: response.property,
-      question: response.messages.find(m => m.role === 'assistant' && 
-                                         !messages.some(existingMsg => existingMsg.content === m.content))?.content || '',
-      completed: response.completed,
-      results: response.results,
-      answers: { ...answers, [currentStep]: answer }
-    };
-  },
-
-  /**
-   * Start a conversation or send a new message
-   */
-  conversation: async (
-    propertyId: string,
+    systemPrompt?: string,
     messages: Message[] = [],
-    userMessage?: string,
-    systemPrompt?: string
-  ): Promise<ConversationResponse> => {
-    // If no system prompt is provided and this is likely a new conversation
-    // (no messages and no user message yet), we need property details
-    if (!systemPrompt && messages.length === 0 && !userMessage) {
-      const property = await import('../data/properties').then(module => {
-        return module.properties.find(p => p.id === propertyId);
-      });
-      
-      // Pass the property data to the backend without formatting a prompt here
-      // The backend will use its default system prompt with this data
-      systemPrompt = JSON.stringify(property);
-    }
+    userMessage?: string
+  ): Promise<LLMResponse> => {
+    // Use a unique ID for logging/debugging
+    const requestId = Math.random().toString(36).substring(2, 9);
+    console.log(`[${requestId}] API call: ${messages.length > 0 ? 'Continuing' : 'Starting'} conversation for property ${propertyId}`);
 
     const response = await fetch(`${API_URL}/conversation`, {
       method: 'POST',
@@ -127,7 +56,16 @@ export const simulationService = {
       throw new Error('Failed to process conversation');
     }
     
-    return await response.json();
+    const data = await response.json();      // Format the response to match what SimulationFlow expects
+    return {
+      success: data.success,
+      step: 'initial',
+      property: data.property,
+      question: data.messages.find((m: Message) => m.role === 'assistant')?.content || '',
+      messages: data.messages,
+      completed: data.completed,
+      results: data.results
+    };
   },
   
   /**

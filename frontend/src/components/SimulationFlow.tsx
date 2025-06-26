@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Send, Sparkles } from 'lucide-react';
 import { Property, SimulationStep, SimulationResult } from '../types';
@@ -16,64 +16,60 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
   const [currentStepId, setCurrentStepId] = useState('initial');
   const [steps, setSteps] = useState<SimulationStep[]>([]);
   const [currentAnswer, setCurrentAnswer] = useState('');
-  const [isThinking, setIsThinking] = useState(true); // Start with thinking state
+  const [isThinking, setIsThinking] = useState(false); // Start without thinking state
   const [showResults, setShowResults] = useState(false);
   const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
   const [allAnswers, setAllAnswers] = useState<Record<string, string>>({});
   const [apiError, setApiError] = useState<string | null>(null);
-
-  // Initialize the simulation with the first question from the API
-  useEffect(() => {
-    const initializeSimulation = async () => {
-      try {
-        setIsThinking(true);
-        
-        // Create the initial system prompt
-        const initialSystemPrompt = `Additional Information:
-You're powering StayVision's "Simulate Your Stay" flow. Here is the property data that the user are looking at:
-
-  ${JSON.stringify(property, null, 2)}
-
-Role:
-You are StayVision, Awaze's friendly AI concierge, here to give guests a "try before you book" stay preview.
-
-Directive:
-This is the very first user‐facing message and the user hasn't given any info yet.  
-1. Greet the user by name of the property and its location.  
-2. Mention one or two of its standout features (e.g. from description or features).  
-3. Invite the guest to share some broad vacation preferences—no specific questions yet.
-
-Output Formatting:
-• One concise paragraph  
-• Conversational, upbeat tone  
-• End with a single open‐ended prompt like "Could you tell me a bit about your vacation preferences?"`;
-        
-        const response = await simulationService.startSimulation(property.id, initialSystemPrompt);
-        
-        if (response.success) {
-          // Set the initial step from the API response
-          const initialStep = {
-            id: response.step,
-            question: response.question,
-            userAnswer: '',
-            isCompleted: false
-          };
-          
-          setSteps([initialStep]);
-          setCurrentStepId(response.step);
-        }
-      } catch (error) {
-        console.error('Failed to initialize simulation:', error);
-        setApiError('Could not start the simulation. Please try again.');
-      } finally {
-        setIsThinking(false);
-      }
-    };
-    
-    initializeSimulation();
-  }, [property.id]);
+  const [showIntroduction, setShowIntroduction] = useState(true); // Start with introduction visible
 
   const currentStep = steps[currentStepIndex];
+
+  const initializeSimulation = async () => {
+    setIsThinking(true);
+
+    try {
+      // Create the initial system prompt
+      const initialSystemPrompt = `Additional Information:
+    You're powering StayVision's "Simulate Your Stay" flow. Here is the property data that the user are looking at:
+
+    ${JSON.stringify(property, null, 2)}
+
+    Role:
+    You are StayVision, Awaze's friendly AI concierge, here to give guests a "try before you book" stay preview.
+
+    Directive:
+    This is the very first user‐facing message and the user hasn't given any info yet.  
+    1. Greet the user by name of the property and its location.  
+    2. Mention one or two of its standout features (e.g. from description or features).  
+    3. Invite the guest to share some broad vacation preferences—no specific questions yet.
+
+    Output Formatting:
+    • One concise paragraph  
+    • Conversational, upbeat tone  
+    • End with a single open‐ended prompt like "Could you tell me a bit about your vacation preferences?"`;
+      
+      const response = await simulationService.getLLMResponse(property.id, initialSystemPrompt);
+      
+      if (response.success) {
+        // Set the initial step from the API response
+        const initialStep = {
+          id: response.step || 'initial',
+          question: response.question || '',
+          userAnswer: '',
+          isCompleted: false
+        };
+        
+        setSteps([initialStep]);
+        setCurrentStepId(response.step || 'initial');
+      }
+    } catch (error) {
+      console.error('Failed to initialize simulation:', error);
+      setApiError('Could not start the simulation. Please try again.');
+    } finally {
+      setIsThinking(false);
+    }
+  };
 
   const handleSubmitAnswer = async () => {
     if (!currentAnswer.trim() || !currentStep) return;
@@ -97,61 +93,30 @@ Output Formatting:
     setIsThinking(true);
 
     try {
-      // Determine if we need a specific system prompt for this step
-      let stepSystemPrompt;
+      // Generate the itinerary based on the user's preferences
+      const finalPrompt = `You are StayVision, Awaze's AI travel concierge. 
+Based on the following property and user preferences, generate a detailed 3-day itinerary:
+
+Property: ${JSON.stringify(property, null, 2)}
+
+User Preferences: ${currentAnswer}
+
+Generate a detailed 3-day itinerary for their stay that includes:
+- Day-by-day activities
+- Personalized tips
+- Highlights tailored to their preferences
+- Make the itinerary feel personal and specific to the information they've shared`;
       
-      // If this is the last step, we might want to generate the final itinerary
-      if (steps.length >= 3 && currentStepIndex === steps.length - 1) {
-        stepSystemPrompt = `You are StayVision, Awaze's AI travel concierge. 
-Based on all the user's answers, generate a detailed 3-day itinerary for their stay at ${JSON.stringify(property, null, 2)}.
-Include day-by-day activities, personalized tips, and highlights tailored to their preferences.
-Make the itinerary feel personal and specific to the information they've shared.`;
-      }
+      // Get LLM response with the final prompt
+      const response = await simulationService.getLLMResponse(property.id, finalPrompt);
       
-      // Call the API with the current step and answer
-      const response = await simulationService.submitStepAnswer(
-        property.id,
-        currentStepId,
-        currentAnswer,
-        updatedAnswers,
-        stepSystemPrompt
-      );
-      
-      if (response.completed) {
+      if (response.success) {
         // If the simulation is complete, show the results
         setSimulationResult(response.results || null);
         setShowResults(true);
-      } else if (response.step && response.question) {
-        // If we have a next step, add it to the steps array if it doesn't exist yet
-        const existingStepIndex = steps.findIndex(s => s.id === response.step);
-        
-        if (existingStepIndex >= 0) {
-          // If the step already exists, just update its question
-          const nextSteps = [...updatedSteps];
-          nextSteps[existingStepIndex] = {
-            ...nextSteps[existingStepIndex],
-            question: response.question
-          };
-          setSteps(nextSteps);
-          setCurrentStepIndex(existingStepIndex);
-        } else {
-          // If it's a new step, add it to the array
-          const newStep: SimulationStep = {
-            id: response.step,
-            question: response.question,
-            userAnswer: '',
-            isCompleted: false
-          };
-          
-          const nextSteps = [...updatedSteps, newStep];
-          setSteps(nextSteps);
-          setCurrentStepIndex(currentStepIndex + 1);
-        }
-        
-        setCurrentStepId(response.step);
       }
     } catch (error) {
-      console.error('Error submitting answer:', error);
+      console.error('Error generating itinerary:', error);
       setApiError('Something went wrong. Please try again.');
     } finally {
       setIsThinking(false);
@@ -165,36 +130,14 @@ Make the itinerary feel personal and specific to the information they've shared.
         result={simulationResult}
         onBack={onBack}
         onRestart={() => {
+          // Reset all simulation state to show the introduction screen again
           setShowResults(false);
           setCurrentStepIndex(0);
           setCurrentStepId('initial');
-          // Start fresh with no steps until API responds
           setSteps([]);
           setSimulationResult(null);
           setAllAnswers({});
-          setIsThinking(true);
-          
-          // Re-initialize the simulation
-          simulationService.startSimulation(property.id)
-            .then(response => {
-              if (response.success) {
-                const initialStep = {
-                  id: response.step,
-                  question: response.question,
-                  userAnswer: '',
-                  isCompleted: false
-                };
-                setSteps([initialStep]);
-                setCurrentStepId(response.step);
-              }
-            })
-            .catch(error => {
-              console.error('Failed to restart simulation:', error);
-              setApiError('Could not restart the simulation. Please try again.');
-            })
-            .finally(() => {
-              setIsThinking(false);
-            });
+          setShowIntroduction(true); // Show introduction again on restart
         }}
       />
     );
@@ -297,18 +240,16 @@ Make the itinerary feel personal and specific to the information they've shared.
             </motion.div>
           </div>
 
-          {/* Question Card */}
           <AnimatePresence mode="wait">
-            {!isThinking ? (
-              steps.length > 0 && currentStep ? (
-                <motion.div
-                  key={currentStep.id}
-                  initial={{ opacity: 0, y: 30, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -30, scale: 0.95 }}
-                  transition={{ duration: 0.6, ease: "easeOut" }}
-                  className="relative"
-                >
+            {showIntroduction ? (
+              <motion.div
+                key="introduction"
+                initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -30, scale: 0.95 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="relative"
+              >
                 {/* Decorative Elements */}
                 <div className="absolute -top-4 -left-4 w-8 h-8 bg-linear-to-br from-green-400 to-green-500 rounded-full opacity-20 blur-sm" />
                 <div className="absolute -bottom-4 -right-4 w-6 h-6 bg-linear-to-br from-mint-400 to-mint-500 rounded-full opacity-30 blur-sm" />
@@ -318,132 +259,238 @@ Make the itinerary feel personal and specific to the information they've shared.
                   <div className="absolute inset-0 bg-linear-to-br from-green-50/50 to-mint-50/30 rounded-3xl" />
                   
                   <div className="relative z-10">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-3 h-3 bg-linear-to-r from-green-400 to-green-500 rounded-full animate-pulse" />
-                      <div className="w-2 h-2 bg-linear-to-r from-mint-400 to-mint-500 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }} />
-                      <div className="w-1.5 h-1.5 bg-linear-to-r from-green-300 to-green-400 rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
-                    </div>
-
                     <motion.h2 
-                      className="text-xl font-semibold text-gray-800 mb-6 whitespace-pre-line leading-relaxed"
+                      className="text-3xl font-bold text-green-600 mb-4 text-center"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.3, duration: 0.8 }}
                     >
-                      {currentStep.question}
+                      Welcome to StayVision!
                     </motion.h2>
+                    
+                    <motion.p
+                      className="text-gray-700 mb-8 text-center text-lg"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.5, duration: 0.8 }}
+                    >
+                      Experience your perfect stay at {property.name} before you book
+                    </motion.p>
 
-                    <div className="space-y-6">
-                      <motion.div
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                      <motion.div 
+                        className="bg-green-50 p-6 rounded-2xl text-center"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.5, duration: 0.6 }}
-                        className="relative"
+                        transition={{ delay: 0.6, duration: 0.6 }}
                       >
-                        <textarea
-                          value={currentAnswer}
-                          onChange={(e) => setCurrentAnswer(e.target.value)}
-                          placeholder="Share your thoughts here..."
-                          className="w-full p-6 border-2 border-green-200/50 rounded-2xl focus:border-green-400 focus:outline-none resize-none h-40 transition-all duration-300 bg-white/80 backdrop-blur-sm text-gray-700 placeholder-gray-400 shadow-inner"
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault();
-                              handleSubmitAnswer();
-                            }
-                          }}
-                        />
-                        <div className="absolute bottom-4 right-4 text-xs text-gray-400">
-                          Press Enter to continue
+                        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Send className="w-6 h-6 text-green-600" />
                         </div>
+                        <h3 className="font-semibold text-gray-800 mb-2">Share Preferences</h3>
+                        <p className="text-gray-600 text-sm">Tell us about your ideal vacation at this property</p>
                       </motion.div>
                       
-                      <motion.button
-                        onClick={handleSubmitAnswer}
-                        disabled={!currentAnswer.trim()}
-                        className="w-full bg-linear-to-r from-green-500 via-green-600 to-green-500 hover:from-green-600 hover:via-green-700 hover:to-green-600 disabled:from-gray-300 disabled:via-gray-400 disabled:to-gray-300 text-white font-semibold py-5 px-8 rounded-2xl flex items-center justify-center gap-3 transition-all duration-500 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform-gpu"
-                        whileHover={currentAnswer.trim() ? { 
-                          scale: 1.02, 
-                          boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" 
-                        } : {}}
-                        whileTap={currentAnswer.trim() ? { scale: 0.98 } : {}}
+                      <motion.div 
+                        className="bg-green-50 p-6 rounded-2xl text-center"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.7, duration: 0.6 }}
+                        transition={{ delay: 0.8, duration: 0.6 }}
                       >
-                        {currentAnswer.trim() && (
-                          <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            className="flex items-center gap-2"
-                          >
-                            <Sparkles className="w-5 h-5" />
-                          </motion.div>
-                        )}
-                        <Send className="w-5 h-5" />
-                        {currentStepIndex === steps.length - 1 ? 'Generate My Stay Experience' : 'Continue Journey'}
-                      </motion.button>
+                        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Sparkles className="w-6 h-6 text-green-600" />
+                        </div>
+                        <h3 className="font-semibold text-gray-800 mb-2">AI Magic</h3>
+                        <p className="text-gray-600 text-sm">Our AI concierge crafts a personalized experience</p>
+                      </motion.div>
+                      
+                      <motion.div 
+                        className="bg-green-50 p-6 rounded-2xl text-center"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 1.0, duration: 0.6 }}
+                      >
+                        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <ArrowLeft className="w-6 h-6 text-green-600" style={{ transform: 'rotate(180deg)' }} />
+                        </div>
+                        <h3 className="font-semibold text-gray-800 mb-2">Explore Itinerary</h3>
+                        <p className="text-gray-600 text-sm">Get a 3-day plan with activities tailored to you</p>
+                      </motion.div>
                     </div>
+                    
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 1.2, duration: 0.5 }}
+                      className="text-center"
+                    >
+                      <motion.button
+                        onClick={() => {
+                          setShowIntroduction(false);
+                          setIsThinking(true);
+                          // Start the simulation only when the button is clicked
+                          initializeSimulation();
+                        }}
+                        className="bg-linear-to-r from-green-500 via-green-600 to-green-500 hover:from-green-600 hover:via-green-700 hover:to-green-600 text-white font-semibold py-5 px-12 rounded-2xl flex items-center justify-center gap-3 transition-all duration-500 mx-auto shadow-lg hover:shadow-xl"
+                        whileHover={{ 
+                          scale: 1.05, 
+                          boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" 
+                        }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <Sparkles className="w-5 h-5" />
+                        Begin Your Experience
+                      </motion.button>
+                    </motion.div>
                   </div>
                 </div>
               </motion.div>
-              ) : null
             ) : (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl p-12 text-center border border-green-100/50 relative overflow-hidden"
-              >
-                {/* Animated background pattern */}
-                <div className="absolute inset-0 opacity-5">
-                  <div className="absolute inset-0 bg-linear-to-r from-green-400 via-mint-400 to-green-400 animate-pulse" />
-                </div>
-                
-                <div className="relative z-10">
-                  <div className="flex justify-center mb-8">
-                    <AwazeLogo isThinking={true} size="lg" className="text-green-500" />
-                  </div>
-                  
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    <h3 className="text-2xl font-semibold text-gray-800 mb-4">
-                      {currentStepIndex === steps.length - 1 ? 'Crafting Your Perfect Stay...' : 'Processing Your Answer...'}
-                    </h3>
-                    <p className="text-gray-600 text-lg leading-relaxed max-w-md mx-auto">
-                      {currentStepIndex === steps.length - 1 
-                        ? 'Creating your personalized day-by-day itinerary with local insights and recommendations.'
-                        : 'Our AI is thinking about the perfect follow-up question for you.'
-                      }
-                    </p>
-                  </motion.div>
+              <AnimatePresence mode="wait">
+                {!isThinking ? (
+                  steps.length > 0 && currentStep ? (
+                    <motion.div
+                      key={currentStep.id}
+                      initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -30, scale: 0.95 }}
+                      transition={{ duration: 0.6, ease: "easeOut" }}
+                      className="relative"
+                    >
+                    {/* Decorative Elements */}
+                    <div className="absolute -top-4 -left-4 w-8 h-8 bg-linear-to-br from-green-400 to-green-500 rounded-full opacity-20 blur-sm" />
+                    <div className="absolute -bottom-4 -right-4 w-6 h-6 bg-linear-to-br from-mint-400 to-mint-500 rounded-full opacity-30 blur-sm" />
+                    
+                    <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-green-100/50 relative overflow-hidden">
+                      {/* Subtle gradient overlay */}
+                      <div className="absolute inset-0 bg-linear-to-br from-green-50/50 to-mint-50/30 rounded-3xl" />
+                      
+                      <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-6">
+                          <div className="w-3 h-3 bg-linear-to-r from-green-400 to-green-500 rounded-full animate-pulse" />
+                          <div className="w-2 h-2 bg-linear-to-r from-mint-400 to-mint-500 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }} />
+                          <div className="w-1.5 h-1.5 bg-linear-to-r from-green-300 to-green-400 rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
+                        </div>
 
-                  {/* Loading dots */}
-                  <div className="flex justify-center gap-2 mt-8">
-                    {[0, 1, 2].map((i) => (
+                        <motion.h2 
+                          className="text-xl font-semibold text-gray-800 mb-6 whitespace-pre-line leading-relaxed"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.3, duration: 0.8 }}
+                        >
+                          {currentStep.question}
+                        </motion.h2>
+
+                        <div className="space-y-6">
+                          <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.5, duration: 0.6 }}
+                            className="relative"
+                          >
+                            <textarea
+                              value={currentAnswer}
+                              onChange={(e) => setCurrentAnswer(e.target.value)}
+                              placeholder="Share your thoughts here..."
+                              className="w-full p-6 border-2 border-green-200/50 rounded-2xl focus:border-green-400 focus:outline-none resize-none h-40 transition-all duration-300 bg-white/80 backdrop-blur-sm text-gray-700 placeholder-gray-400 shadow-inner"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                  e.preventDefault();
+                                  handleSubmitAnswer();
+                                }
+                              }}
+                            />
+                            <div className="absolute bottom-4 right-4 text-xs text-gray-400">
+                              Press Enter to continue
+                            </div>
+                          </motion.div>
+                          
+                          <motion.button
+                            onClick={handleSubmitAnswer}
+                            disabled={!currentAnswer.trim()}
+                            className="w-full bg-linear-to-r from-green-500 via-green-600 to-green-500 hover:from-green-600 hover:via-green-700 hover:to-green-600 disabled:from-gray-300 disabled:via-gray-400 disabled:to-gray-300 text-white font-semibold py-5 px-8 rounded-2xl flex items-center justify-center gap-3 transition-all duration-500 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform-gpu"
+                            whileHover={currentAnswer.trim() ? { 
+                              scale: 1.02, 
+                              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" 
+                            } : {}}
+                            whileTap={currentAnswer.trim() ? { scale: 0.98 } : {}}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.7, duration: 0.6 }}
+                          >
+                            {currentAnswer.trim() && (
+                              <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="flex items-center gap-2"
+                              >
+                                <Sparkles className="w-5 h-5" />
+                              </motion.div>
+                            )}
+                            <Send className="w-5 h-5" />
+                            Generate My Stay Experience
+                          </motion.button>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                  ) : null
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl p-12 text-center border border-green-100/50 relative overflow-hidden"
+                  >
+                    {/* Animated background pattern */}
+                    <div className="absolute inset-0 opacity-5">
+                      <div className="absolute inset-0 bg-linear-to-r from-green-400 via-mint-400 to-green-400 animate-pulse" />
+                    </div>
+                    
+                    <div className="relative z-10">
+                      <div className="flex justify-center mb-8">
+                        <AwazeLogo isThinking={true} size="lg" className="text-green-500" />
+                      </div>
+                      
                       <motion.div
-                        key={i}
-                        className="w-3 h-3 bg-linear-to-r from-green-400 to-green-500 rounded-full"
-                        animate={{
-                          scale: [1, 1.2, 1],
-                          opacity: [0.5, 1, 0.5]
-                        }}
-                        transition={{
-                          duration: 1.5,
-                          repeat: Infinity,
-                          delay: i * 0.2
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                      >
+                        <h3 className="text-2xl font-semibold text-gray-800 mb-4">
+                          Crafting Your Perfect Stay...
+                        </h3>
+                        <p className="text-gray-600 text-lg leading-relaxed max-w-md mx-auto">
+                          Creating your personalized day-by-day itinerary with local insights and recommendations.
+                        </p>
+                      </motion.div>
+
+                      {/* Loading dots */}
+                      <div className="flex justify-center gap-2 mt-8">
+                        {[0, 1, 2].map((i) => (
+                          <motion.div
+                            key={i}
+                            className="w-3 h-3 bg-linear-to-r from-green-400 to-green-500 rounded-full"
+                            animate={{
+                              scale: [1, 1.2, 1],
+                              opacity: [0.5, 1, 0.5]
+                            }}
+                            transition={{
+                              duration: 1.5,
+                              repeat: Infinity,
+                              delay: i * 0.2
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             )}
           </AnimatePresence>
 
           {/* Previous Answers Summary */}
-          {currentStepIndex > 0 && !isThinking && (
+          {currentStepIndex > 0 && !isThinking && !showIntroduction && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
