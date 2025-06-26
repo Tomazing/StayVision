@@ -23,9 +23,7 @@ const openai = new OpenAI({
 
 // Middleware
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.FRONTEND_URL] // Use the frontend URL in production
-    : 'http://localhost:5173', // Default Vite dev server port
+  origin: ['http://localhost:5173', process.env.FRONTEND_URL], // Use the frontend URL in production
   methods: ['GET', 'POST'],
   credentials: true
 }));
