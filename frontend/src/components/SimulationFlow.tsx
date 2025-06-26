@@ -88,8 +88,8 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
       if (response.success) {
         const responseText = response.question || '';
         
-        // Check if the response indicates we're ready to generate the experience
-        // Or if we've already reached the maximum of 3 follow-up questions
+        // Check if the response indicates that it is ready to generate the experience
+        // Or if have already reached the maximum of 3 follow-up questions
         if (responseText.includes("ready to generate your staying experience") || currentStepIndex >= 3) {
           // Generate final simulation results
           const finalPrompt = getFinalPrompt(property, updatedAnswers);
@@ -106,7 +106,7 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
                 // If the API already returned structured results, use them
                 resultData = finalResponse.results;
               } else if (finalResponse.question) {
-                // If we got a text response, try to parse it as JSON
+                // If got a text response, try to parse it as JSON
                 // First, try to extract JSON if it's wrapped in markdown code blocks
                 let jsonText = finalResponse.question;
 
@@ -154,7 +154,7 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
             }
           }
         } else {
-          // We need more information, so add a new step with the follow-up question
+          // Need more information, so add a new step with the follow-up question
           const newStep = {
             id: `step-${currentStepIndex + 1}`,
             question: responseText,

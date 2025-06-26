@@ -32,7 +32,6 @@ app.use(express.static(join(__dirname, 'public')));
 
 // Routes
 // The root path will automatically serve index.html from the public directory
-// because we've configured express.static middleware above
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'StayVision API is running' });
@@ -44,7 +43,7 @@ app.post('/api/simulate/start', async (req, res) => {
     const { propertyId } = req.body;
     
     // In a real app, would fetch property data from a database
-    // For demo purposes, we'll use the hardcoded property data
+    // For demo purposes, just use the hardcoded property data
     const property = getPropertyById(propertyId);
     
     if (!property) {
@@ -183,7 +182,7 @@ app.post('/api/getResponseFromLLM', async (req, res) => {
       }
     }
     
-    // Check if we should generate final results based on conversation length
+    // Check if it should generate final results based on conversation length
     const userMessageCount = conversationHistory.filter(msg => msg.role === 'user').length;
     const shouldGenerateResults = userMessageCount >= 4 || 
       (userMessageCount >= 3 && conversationHistory.some(msg => 
@@ -192,7 +191,7 @@ app.post('/api/getResponseFromLLM', async (req, res) => {
         msg.content.toLowerCase().includes('sounds good')
       ));
     
-    // If we have enough information, generate a complete itinerary
+    // If have enough information, generate a complete itinerary
     if (shouldGenerateResults) {
       // Call OpenAI to generate the itinerary
       const results = await generateItineraryFromConversation(property, conversationHistory, customSystemPrompt);
@@ -280,7 +279,7 @@ Format your response as a JSON object with the following structure:
       ...conversationHistory.filter(msg => msg.role !== 'system')
     ];
     
-    // Add a final instruction to ensure we get the desired format
+    // Add a final instruction to ensure to get the desired format
     messages.push({
       role: 'user',
       content: 'Based on the conversation, please generate my personalized 3-day itinerary in the JSON format specified.'

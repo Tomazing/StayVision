@@ -56,7 +56,7 @@ export const SimulationResults: React.FC<SimulationResultsProps> = ({
         propertyId: property.id,
         rating,
         feedback,
-        answers: {} // We would collect all answers from the flow in a real app
+        answers: {}
       });
       
       setShowFeedback(true);
@@ -327,10 +327,10 @@ export const SimulationResults: React.FC<SimulationResultsProps> = ({
           className="text-center mt-8 p-4 bg-green-50 rounded-xl"
         >
           <p className="text-green-700">
-            <strong>Check-out (Thu 24 Jul):</strong> 09:00 Final coffee on the patio – let us know if this simulated stay matched your expectations!
+            Let us know if this simulated stay matched your expectations!
           </p>
           <p className="text-green-600 text-sm mt-2">
-            Feel free to tweak any stop—more cafés, gentler walks, extra pub hops—and we'll update your StayVision preview instantly.
+            Feel free to tweak any stop more cafés, gentler walks, extra pub hops by clicking <strong>Try Again</strong> button and I'll update your preview instantly.
           </p>
         </motion.div>
       </div>
