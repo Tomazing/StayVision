@@ -114,34 +114,27 @@
     </div>
     
     <div class="endpoint">
-      <h3><span class="method post">POST</span> /api/simulate/start</h3>
-      <p>Start a new stay simulation for a specific property.</p>
+      <h3><span class="method post">POST</span> /api/getResponseFromLLM</h3>
+      <p>Process a conversation with the LLM for a specific property.</p>
       <p>Required payload:</p>
       <pre>{
-  "propertyId": "wildhouse-farm"
+  "propertyId": "wildhouse-farm",
+  "messages": [],
+  "userMessage": "Family of 4 with two teenagers. We love hiking and local food.",
+  "systemPrompt": null
 }</pre>
       <p>Example usage:</p>
-      <pre>fetch('https://stay-vision-backend.vercel.app/api/simulate/start', {
+      <pre>fetch('https://stay-vision-backend.vercel.app/api/getResponseFromLLM', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
-    propertyId: 'wildhouse-farm'
+    propertyId: 'wildhouse-farm',
+    messages: [],
+    userMessage: "Family of 4 with two teenagers. We love hiking and local food."
   })
 })</pre>
-    </div>
-    
-    <div class="endpoint">
-      <h3><span class="method post">POST</span> /api/simulate/step</h3>
-      <p>Process a step in the simulation with the user's answers.</p>
-      <p>Required payload:</p>
-      <pre>{
-  "propertyId": "wildhouse-farm",
-  "currentStep": "initial",
-  "answer": "Family of 4 with two teenagers. We love hiking and local food.",
-  "answers": {}
-}</pre>
     </div>
     
     <div class="endpoint">

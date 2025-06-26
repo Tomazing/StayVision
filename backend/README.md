@@ -57,27 +57,29 @@ npm start
 ### GET /api/health
 - Check if the API is running
 
-### POST /api/simulate/start
-- Start a new simulation
-- Request body: `{ "propertyId": "1" }`
-- Returns initial question and property details
-
-### POST /api/simulate/step
-- Submit an answer and get the next question
-- Request body: `{ "propertyId": "1", "currentStep": "step-id", "answer": "user answer", "answers": {} }`
-- Returns next question or final simulation results
+### POST /api/getResponseFromLLM
+- Process a conversation with the LLM for a property
+- Request body: 
+```
+{ 
+  "propertyId": "wildhouse-farm", 
+  "messages": [], 
+  "userMessage": "Family of 4 with two teenagers. We love hiking and local food.",
+  "systemPrompt": null 
+}
+```
+- Returns conversation history and property details, and eventually simulation results
 
 ### POST /api/feedback
 - Submit user feedback about the simulation
-- Request body: `{ "propertyId": "1", "rating": 8, "feedback": "positive", "answers": {} }`
+- Request body: `{ "propertyId": "wildhouse-farm", "rating": 8, "feedback": "positive", "answers": {} }`
 
 ## Integration with Frontend
 
 The frontend communicates with this API to:
-1. Start a simulation for a selected property
-2. Submit user responses to questions
-3. Receive personalized itineraries
-4. Submit user feedback
+1. Process conversations with the AI for a selected property through a single endpoint
+2. Receive property details, conversation history, and personalized itineraries
+3. Submit user feedback
 
 ## Development Notes
 
