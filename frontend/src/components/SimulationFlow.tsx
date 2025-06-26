@@ -199,33 +199,28 @@ DO NOT include any explanatory text, ONLY output the JSON object.`;
                 // First, try to extract JSON if it's wrapped in markdown code blocks
                 let jsonText = finalResponse.question;
 
-                
-
-          // // Save jsonText to a file for debugging (browser download)
-          // const blob = new Blob([jsonText], { type: 'application/json' });
-          // const url = URL.createObjectURL(blob);
-          // const a = document.createElement('a');
-          // a.href = url;
-          // a.download = 'simulation-result.json';
-          // document.body.appendChild(a);
-          // a.click();
-          // document.body.removeChild(a);
-          // URL.revokeObjectURL(url);
-
-
-
-
                 const jsonMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
                 if (jsonMatch && jsonMatch[1]) {
                   jsonText = jsonMatch[1];
                 }
-
-                console.log('Final JSON response:', jsonText);
-
-
-
                 // Parse the JSON
                 resultData = JSON.parse(jsonText);
+
+                console.log(resultData);
+                
+                // Save parsed JSON for debugging
+                // const saveJsonForDebugging = (text: any, filename = 'parsed-result.json') => {
+                //   const blob = new Blob([typeof text === 'string' ? text : JSON.stringify(text, null, 2)], { type: 'application/json' });
+                //   const url = URL.createObjectURL(blob);
+                //   const a = document.createElement('a');
+                //   a.href = url;
+                //   a.download = filename;
+                //   document.body.appendChild(a);
+                //   a.click();
+                //   document.body.removeChild(a);
+                //   URL.revokeObjectURL(url);
+                // };
+                // saveJsonForDebugging(resultData, 'parsed-simulation-result.json');
                 
                 // Validate the structure
                 if (!resultData.itinerary || !Array.isArray(resultData.itinerary) || 
@@ -238,8 +233,10 @@ DO NOT include any explanatory text, ONLY output the JSON object.`;
               }
               
               // Set the simulation result and show the results
+              console.log('Setting simulation result and showing results:', resultData);
               setSimulationResult(resultData);
               setShowResults(true);
+              // console.log('State after setting:', { showResults: true, simulationResult: resultData });
             } catch (error) {
               console.error('Error parsing simulation results:', error);
               setApiError('Unable to generate your itinerary. Please try again.');
@@ -273,7 +270,24 @@ DO NOT include any explanatory text, ONLY output the JSON object.`;
 
   return (
     <div className="min-h-screen bg-linear-to-br from-green-100 via-green-50 to-mint-100 flex flex-col relative overflow-hidden">
-      {/* Error Message Display */}
+      {showResults && simulationResult ? (
+        <SimulationResults
+          property={property}
+          result={simulationResult}
+          onBack={onBack}
+          onRestart={() => {
+            setShowResults(false);
+            setShowIntroduction(true);
+            setSimulationResult(null);
+            setSteps([]);
+            setCurrentStepIndex(0);
+            setCurrentStepId('initial');
+            setAllAnswers({});
+          }}
+        />
+      ) : (
+        <>
+          {/* Error Message Display */}
       {apiError && (
         <div className="absolute top-24 left-0 right-0 mx-auto w-max z-50">
           <motion.div 
@@ -648,6 +662,8 @@ DO NOT include any explanatory text, ONLY output the JSON object.`;
           )}
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 };
