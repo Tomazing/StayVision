@@ -354,7 +354,7 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
                           <Sparkles className="w-6 h-6 text-green-600" />
                         </div>
                         <h3 className="font-semibold text-gray-800 mb-2">AI Magic</h3>
-                        <p className="text-gray-600 text-sm">Our AI concierge crafts a personalized experience</p>
+                        <p className="text-gray-600 text-sm">The AI concierge crafts a personalized experience</p>
                       </motion.div>
                       
                       <motion.div 

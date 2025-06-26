@@ -82,7 +82,7 @@ The frontend communicates with this API to:
 ## Development Notes
 
 - The server uses mock property data for the hackathon demo
-- In a production environment, you would connect to a database for property information
+- In a production environment, it would connect to a database for property information
 - The OpenAI integration can be customized with different models and prompts
 
 ## Deploying to Vercel

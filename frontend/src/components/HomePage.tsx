@@ -47,7 +47,7 @@ export const HomePage: React.FC<HomePageProps> = ({ properties, onSelectProperty
             Simulate Your Perfect Stay
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-            Experience your holiday before you book. Our AI creates personalized day-by-day previews 
+            Experience your holiday before you book. The AI creates personalized day-by-day previews 
             tailored to your interests, travel style, and preferences.
           </p>
           <div className="flex justify-center">
@@ -94,7 +94,7 @@ export const HomePage: React.FC<HomePageProps> = ({ properties, onSelectProperty
             Choose a Property to Simulate Your Stay
           </h3>
           <p className="text-center text-gray-600 mb-12">
-            Select from our featured properties and discover what your perfect holiday could look like
+            Select from the featured properties and discover what your perfect holiday could look like
           </p>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -147,7 +147,7 @@ export const HomePage: React.FC<HomePageProps> = ({ properties, onSelectProperty
                 <span className="text-2xl font-bold text-green-600">3</span>
               </div>
               <h4 className="font-semibold text-gray-800 mb-2">AI Magic</h4>
-              <p className="text-gray-600 text-sm">Our AI creates your personalized itinerary</p>
+              <p className="text-gray-600 text-sm">The AI creates your personalized itinerary</p>
             </div>
             
             <div className="text-center">

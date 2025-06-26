@@ -36,7 +36,7 @@
   border-left-color: theme('colors.green.300');
 }
 
-/* Remove default margins from prose when inside our custom components */
+/* Remove default margins from prose when inside the custom components */
 .prose > :first-child {
   margin-top: 0;
 }

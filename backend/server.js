@@ -106,7 +106,7 @@ app.post('/api/feedback', (req, res) => {
   try {
     const { propertyId, rating, feedback, answers } = req.body;
     
-    // In a real app, you would store this feedback in a database
+    // In a real app would store this feedback in a database
     console.log('Feedback received:', { propertyId, rating, feedback, answers });
     
     res.status(200).json({ success: true });
@@ -283,7 +283,7 @@ Format your response as a JSON object with the following structure:
     // Add a final instruction to ensure we get the desired format
     messages.push({
       role: 'user',
-      content: 'Based on our conversation, please generate my personalized 3-day itinerary in the JSON format specified.'
+      content: 'Based on the conversation, please generate my personalized 3-day itinerary in the JSON format specified.'
     });
     
     // Call OpenAI API
