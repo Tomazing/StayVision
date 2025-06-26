@@ -26,11 +26,8 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
   const currentStep = steps[currentStepIndex];
 
   const initializeSimulation = async () => {
-    setIsThinking(true);
-
-    try {
-      // Create the initial system prompt
-      const initialSystemPrompt = `Additional Information:
+    // Create the initial system prompt
+    const initialSystemPrompt = `Additional Information:
     You're powering StayVision's "Simulate Your Stay" flow. Here is the property data that the user are looking at:
 
     ${JSON.stringify(property, null, 2)}
@@ -48,7 +45,10 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
     • One concise paragraph  
     • Conversational, upbeat tone  
     • End with a single open‐ended prompt like "Could you tell me a bit about your vacation preferences?"`;
-      
+
+    setIsThinking(true);
+
+    try {
       const response = await simulationService.getLLMResponse(property.id, initialSystemPrompt);
       
       if (response.success) {
@@ -71,7 +71,7 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
     }
   };
 
-  const handleSubmitAnswer = async () => {
+  const handleFollowUpQuestions = async () => {
     if (!currentAnswer.trim() || !currentStep) return;
 
     // Update current step with answer
@@ -88,60 +88,188 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
     setAllAnswers(updatedAnswers);
     
     setCurrentAnswer('');
-
-    // Show thinking animation
     setIsThinking(true);
 
     try {
-      // Generate the itinerary based on the user's preferences
-      const finalPrompt = `You are StayVision, Awaze's AI travel concierge. 
+      // Extract the questions from the steps
+      const questions = steps.map(step => step.question);
+      
+      // Create the follow-up questions prompt
+      const followUpQuestionsPrompt = `Additional Information:
+You're powering StayVision's "Simulate Your Stay" flow.  
+The current property is:
+${JSON.stringify(property, null, 2)}
+
+The guest has already given a broad idea of what they want:
+${JSON.stringify(Object.values(updatedAnswers)[0] || '', null, 2)}
+
+Here are the follow-up questions you asked and the guest's answers so far:
+Questions: ${JSON.stringify(questions, null, 2)}
+Answers:   ${JSON.stringify(Object.values(updatedAnswers).slice(1), null, 2)}
+Number of follow-up questions asked: ${currentStepIndex}
+Maximum allowed follow-up questions: 3
+
+Role:
+You are StayVision, Awaze's friendly AI concierge.
+
+Directive:
+Review the property details and the guest's responses.  
+• If you think you still need more information before generating their personalised stay simulation AND we have asked fewer than 3 follow-up questions, output exactly one friendly follow-up question (include a brief example in parentheses).  
+• Otherwise, output exactly:
+  Thanks! I am ready to generate your staying experience!
+
+Output Formatting:
+• One single-line message—either the follow-up question or the ready phrase above.  
+• Conversational, upbeat tone.`;
+
+      const response = await simulationService.getLLMResponse(property.id, followUpQuestionsPrompt);
+      
+      if (response.success) {
+        const responseText = response.question || '';
+        
+        // Check if the response indicates we're ready to generate the experience
+        // Or if we've already reached the maximum of 3 follow-up questions
+        if (responseText.includes("ready to generate your staying experience") || currentStepIndex >= 3) {
+          // Generate final simulation results
+          const finalPrompt = `You are StayVision, Awaze's AI travel concierge. 
 Based on the following property and user preferences, generate a detailed 3-day itinerary:
 
 Property: ${JSON.stringify(property, null, 2)}
 
-User Preferences: ${currentAnswer}
+User Preferences: ${JSON.stringify(updatedAnswers, null, 2)}
 
-Generate a detailed 3-day itinerary for their stay that includes:
-- Day-by-day activities
-- Personalized tips
-- Highlights tailored to their preferences
-- Make the itinerary feel personal and specific to the information they've shared`;
-      
-      // Get LLM response with the final prompt
-      const response = await simulationService.getLLMResponse(property.id, finalPrompt);
-      
-      if (response.success) {
-        // If the simulation is complete, show the results
-        setSimulationResult(response.results || null);
-        setShowResults(true);
+Output Instructions:
+You MUST format your response as a valid JSON object with the following structure:
+{
+  "itinerary": [
+    {
+      "day": 1,
+      "title": "Day title here",
+      "activities": [
+        {
+          "time": "9:00 AM",
+          "description": "Activity description",
+          "type": "arrival" | "meal" | "activity" | "rest" | "departure"
+        },
+        ...more activities
+      ]
+    },
+    {
+      "day": 2,
+      "title": "Day title here",
+      "activities": [...] 
+    },
+    {
+      "day": 3,
+      "title": "Day title here",
+      "activities": [...] 
+    }
+  ],
+  "personalizedTips": [
+    "Tip 1 here",
+    "Tip 2 here",
+    ...more tips (4-6 tips total)
+  ],
+  "highlights": [
+    "Highlight 1 here",
+    "Highlight 2 here",
+    ...more highlights (3-5 highlights total)
+  ]
+}
+
+Each day should have 5-7 activities with appropriate times. 
+Use the "type" field to categorize each activity as one of: "arrival", "meal", "activity", "rest", or "departure".
+Make the itinerary feel personal and specific to the information they've shared.
+Include family-friendly activities based on user preferences.
+DO NOT include any explanatory text, ONLY output the JSON object.`;
+          
+          // Get LLM response with the final prompt
+          const finalResponse = await simulationService.getLLMResponse(property.id, finalPrompt);
+          
+          if (finalResponse.success) {
+            try {
+              // Try to parse the response as a SimulationResult
+              let resultData: SimulationResult;
+              
+              if (finalResponse.results) {
+                // If the API already returned structured results, use them
+                resultData = finalResponse.results;
+              } else if (finalResponse.question) {
+                // If we got a text response, try to parse it as JSON
+                // First, try to extract JSON if it's wrapped in markdown code blocks
+                let jsonText = finalResponse.question;
+
+                
+
+          // // Save jsonText to a file for debugging (browser download)
+          // const blob = new Blob([jsonText], { type: 'application/json' });
+          // const url = URL.createObjectURL(blob);
+          // const a = document.createElement('a');
+          // a.href = url;
+          // a.download = 'simulation-result.json';
+          // document.body.appendChild(a);
+          // a.click();
+          // document.body.removeChild(a);
+          // URL.revokeObjectURL(url);
+
+
+
+
+                const jsonMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+                if (jsonMatch && jsonMatch[1]) {
+                  jsonText = jsonMatch[1];
+                }
+
+                console.log('Final JSON response:', jsonText);
+
+
+
+                // Parse the JSON
+                resultData = JSON.parse(jsonText);
+                
+                // Validate the structure
+                if (!resultData.itinerary || !Array.isArray(resultData.itinerary) || 
+                    !resultData.personalizedTips || !Array.isArray(resultData.personalizedTips) ||
+                    !resultData.highlights || !Array.isArray(resultData.highlights)) {
+                  throw new Error("Invalid response structure");
+                }
+              } else {
+                throw new Error("No results returned from API");
+              }
+              
+              // Set the simulation result and show the results
+              setSimulationResult(resultData);
+              setShowResults(true);
+            } catch (error) {
+              console.error('Error parsing simulation results:', error);
+              setApiError('Unable to generate your itinerary. Please try again.');
+            }
+          }
+        } else {
+          // We need more information, so add a new step with the follow-up question
+          const newStep = {
+            id: `step-${currentStepIndex + 1}`,
+            question: responseText,
+            userAnswer: '',
+            isCompleted: false
+          };
+          
+          // Add the new step to the steps
+          const newSteps = [...updatedSteps, newStep];
+          setSteps(newSteps);
+          
+          // Move to the next step
+          setCurrentStepIndex(currentStepIndex + 1);
+          setCurrentStepId(newStep.id);
+        }
       }
     } catch (error) {
-      console.error('Error generating itinerary:', error);
+      console.error('Error in follow-up question flow:', error);
       setApiError('Something went wrong. Please try again.');
     } finally {
       setIsThinking(false);
     }
   };
-
-  if (showResults && simulationResult) {
-    return (
-      <SimulationResults
-        property={property}
-        result={simulationResult}
-        onBack={onBack}
-        onRestart={() => {
-          // Reset all simulation state to show the introduction screen again
-          setShowResults(false);
-          setCurrentStepIndex(0);
-          setCurrentStepId('initial');
-          setSteps([]);
-          setSimulationResult(null);
-          setAllAnswers({});
-          setShowIntroduction(true); // Show introduction again on restart
-        }}
-      />
-    );
-  }
 
   return (
     <div className="min-h-screen bg-linear-to-br from-green-100 via-green-50 to-mint-100 flex flex-col relative overflow-hidden">
@@ -396,7 +524,7 @@ Generate a detailed 3-day itinerary for their stay that includes:
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter' && !e.shiftKey) {
                                   e.preventDefault();
-                                  handleSubmitAnswer();
+                                  handleFollowUpQuestions();
                                 }
                               }}
                             />
@@ -406,7 +534,7 @@ Generate a detailed 3-day itinerary for their stay that includes:
                           </motion.div>
                           
                           <motion.button
-                            onClick={handleSubmitAnswer}
+                            onClick={handleFollowUpQuestions}
                             disabled={!currentAnswer.trim()}
                             className="w-full bg-linear-to-r from-green-500 via-green-600 to-green-500 hover:from-green-600 hover:via-green-700 hover:to-green-600 disabled:from-gray-300 disabled:via-gray-400 disabled:to-gray-300 text-white font-semibold py-5 px-8 rounded-2xl flex items-center justify-center gap-3 transition-all duration-500 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform-gpu"
                             whileHover={currentAnswer.trim() ? { 

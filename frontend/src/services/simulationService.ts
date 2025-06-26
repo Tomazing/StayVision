@@ -55,8 +55,13 @@ export const simulationService = {
     if (!response.ok) {
       throw new Error('Failed to process conversation');
     }
+
+
+    const data = await response.json(); // Format the response to match 
     
-    const data = await response.json();      // Format the response to match what SimulationFlow expects
+    // console.log(data.messages);
+    
+    // what SimulationFlow expects
     return {
       success: data.success,
       step: 'initial',
