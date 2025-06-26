@@ -117,7 +117,7 @@ app.post('/api/feedback', (req, res) => {
 });
 
 // Single endpoint to handle the entire conversation
-app.post('/api/conversation', async (req, res) => {
+app.post('/api/getResponseFromLLM', async (req, res) => {
   try {
     const { propertyId, messages = [], userMessage, systemPrompt: customSystemPrompt } = req.body;
     

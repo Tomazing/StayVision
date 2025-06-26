@@ -39,7 +39,7 @@ export const simulationService = {
     const requestId = Math.random().toString(36).substring(2, 9);
     console.log(`[${requestId}] API call: ${messages.length > 0 ? 'Continuing' : 'Starting'} conversation for property ${propertyId}`);
 
-    const response = await fetch(`${API_URL}/conversation`, {
+    const response = await fetch(`${API_URL}/getResponseFromLLM`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
