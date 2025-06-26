@@ -14,14 +14,9 @@ interface SimulationFlowProps {
 export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [currentStepId, setCurrentStepId] = useState('initial');
-  const [steps, setSteps] = useState<SimulationStep[]>([{
-    id: 'initial',
-    question: `Welcome to StayVision's "Simulate Your Stay" at ${property.name}!\n\nDates: Mon 21 July 2025 – Thu 24 July 2025 (3 nights)\nSleeps: ${property.sleeps} | Bedrooms: ${property.bedrooms} | Dogs allowed: ${property.dogsAllowed ? `up to ${property.dogsAllowed}` : 'No'}\n\nTo tailor your story-like preview, tell me a bit about your trip:\n• Who's coming? (e.g. family with young kids, friends, couple + dog)\n• What do you love to do? (e.g. hiking, BBQs, local dining)\n• Any special requests or must-haves? (e.g. pet-friendly cafés, cycle storage)`,
-    userAnswer: '',
-    isCompleted: false
-  }]);
+  const [steps, setSteps] = useState<SimulationStep[]>([]);
   const [currentAnswer, setCurrentAnswer] = useState('');
-  const [isThinking, setIsThinking] = useState(false);
+  const [isThinking, setIsThinking] = useState(true); // Start with thinking state
   const [showResults, setShowResults] = useState(false);
   const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
   const [allAnswers, setAllAnswers] = useState<Record<string, string>>({});
@@ -32,10 +27,31 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
     const initializeSimulation = async () => {
       try {
         setIsThinking(true);
-        const response = await simulationService.startSimulation(property.id);
+        
+        // Create the initial system prompt
+        const initialSystemPrompt = `Additional Information:
+You're powering StayVision's "Simulate Your Stay" flow. Here is the property data that the user are looking at:
+
+  ${JSON.stringify(property, null, 2)}
+
+Role:
+You are StayVision, Awaze's friendly AI concierge, here to give guests a "try before you book" stay preview.
+
+Directive:
+This is the very first user‐facing message and the user hasn't given any info yet.  
+1. Greet the user by name of the property and its location.  
+2. Mention one or two of its standout features (e.g. from description or features).  
+3. Invite the guest to share some broad vacation preferences—no specific questions yet.
+
+Output Formatting:
+• One concise paragraph  
+• Conversational, upbeat tone  
+• End with a single open‐ended prompt like "Could you tell me a bit about your vacation preferences?"`;
+        
+        const response = await simulationService.startSimulation(property.id, initialSystemPrompt);
         
         if (response.success) {
-          // Update the first question with the API response
+          // Set the initial step from the API response
           const initialStep = {
             id: response.step,
             question: response.question,
@@ -43,12 +59,12 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
             isCompleted: false
           };
           
-          setSteps([initialStep, ...steps.slice(1)]);
+          setSteps([initialStep]);
           setCurrentStepId(response.step);
         }
       } catch (error) {
         console.error('Failed to initialize simulation:', error);
-        setApiError('Could not start the simulation. Using fallback questions.');
+        setApiError('Could not start the simulation. Please try again.');
       } finally {
         setIsThinking(false);
       }
@@ -60,7 +76,7 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
   const currentStep = steps[currentStepIndex];
 
   const handleSubmitAnswer = async () => {
-    if (!currentAnswer.trim()) return;
+    if (!currentAnswer.trim() || !currentStep) return;
 
     // Update current step with answer
     const updatedSteps = [...steps];
@@ -81,12 +97,24 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
     setIsThinking(true);
 
     try {
+      // Determine if we need a specific system prompt for this step
+      let stepSystemPrompt;
+      
+      // If this is the last step, we might want to generate the final itinerary
+      if (steps.length >= 3 && currentStepIndex === steps.length - 1) {
+        stepSystemPrompt = `You are StayVision, Awaze's AI travel concierge. 
+Based on all the user's answers, generate a detailed 3-day itinerary for their stay at ${JSON.stringify(property, null, 2)}.
+Include day-by-day activities, personalized tips, and highlights tailored to their preferences.
+Make the itinerary feel personal and specific to the information they've shared.`;
+      }
+      
       // Call the API with the current step and answer
       const response = await simulationService.submitStepAnswer(
         property.id,
         currentStepId,
         currentAnswer,
-        updatedAnswers
+        updatedAnswers,
+        stepSystemPrompt
       );
       
       if (response.completed) {
@@ -125,94 +153,6 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
     } catch (error) {
       console.error('Error submitting answer:', error);
       setApiError('Something went wrong. Please try again.');
-      
-      // When an error occurs, we'll generate a simulated response based on current answers
-      // This simulates the LLM deciding what to do next
-      generateSimulationResults();
-    } finally {
-      setIsThinking(false);
-    }
-  };
-
-  const generateSimulationResults = async () => {
-    setIsThinking(true);
-    
-    try {
-      // Call the API to generate final results
-      const response = await simulationService.submitStepAnswer(
-        property.id,
-        currentStepId,
-        currentAnswer,
-        allAnswers
-      );
-      
-      if (response.completed && response.results) {
-        setSimulationResult(response.results);
-        setShowResults(true);
-      } else {
-        throw new Error('Failed to generate results');
-      }
-    } catch (error) {
-      console.error('Error generating simulation results:', error);
-      setApiError('Could not generate your stay experience. Using sample data.');
-      
-      // Fallback mock data
-      const mockResult: SimulationResult = {
-        itinerary: [
-          {
-            day: 1,
-            title: 'Graduation & Family Time',
-            activities: [
-              { time: '14:00', description: 'Arrive by bus from Rochdale station, drop bags in the grand entrance hall, then unwind on the cosy lounge sofas by the wood burner.', type: 'arrival' },
-              { time: '15:00', description: 'Light lunch next door at the farmhouse\'s Italian restaurant (fresh pasta & gelato).', type: 'meal' },
-              { time: '16:30', description: 'Catch the local bus/train via Manchester to Huddersfield campus for your ceremony—congratulations grad!', type: 'activity' },
-              { time: '19:30', description: 'Return to Wildhouse Farm, change into something comfy, then celebrate with a family toast on the patio overlooking the garden.', type: 'rest' },
-              { time: '20:00', description: 'Evening stroll through Milnrow village—pop into a friendly local pub ("The White Lion") for a nightcap or a hot chocolate at a riverside café.', type: 'activity' }
-            ]
-          },
-          {
-            day: 2,
-            title: 'Markets, Lakeside & Mum\'s Feast',
-            activities: [
-              { time: '08:30', description: 'Breakfast in your farmhouse kitchen (local eggs, homemade preserves).', type: 'meal' },
-              { time: '10:00', description: 'Bus to Rochdale Market—pick up Cheshire cheese, local bacon, seasonal veg and artisan bread for tonight\'s dinner.', type: 'activity' },
-              { time: '12:00', description: 'Picnic by Hollingworth Lake: gentle lakeside walk, then your market haul on a picnic blanket.', type: 'meal' },
-              { time: '14:00', description: 'Short tram ride to Piethorne Valley: easy riverside stroll amid wildflowers.', type: 'activity' },
-              { time: '16:00', description: 'Back at the cottage—store boots in the boot room, pour tea in the bay-window dining room, then Mum begins cooking her signature stir-fry with your fresh finds.', type: 'rest' },
-              { time: '19:00', description: 'Family dinner around the farmhouse table—share graduation stories as the sun sets.', type: 'meal' },
-              { time: '21:00', description: 'Board games or Smart TV movie night by the fire.', type: 'rest' }
-            ]
-          },
-          {
-            day: 3,
-            title: 'Manchester Highlights & Pubs',
-            activities: [
-              { time: '09:00', description: 'Quick farmhouse breakfast, then catch the train from Rochdale to Manchester Victoria.', type: 'meal' },
-              { time: '10:00', description: 'Northern Quarter coffee at Takk, followed by street-art hunting.', type: 'activity' },
-              { time: '12:30', description: 'Lunch at Bundobust (Indian street-food – a UK twist your parents will love).', type: 'meal' },
-              { time: '14:00', description: 'Explore the Science & Industry Museum\'s interactive galleries.', type: 'activity' },
-              { time: '16:30', description: 'Return to Wildhouse Farm—freshen up in your super-king or twin bedroom.', type: 'rest' },
-              { time: '18:00', description: 'Bus into Milnrow for a pint at The White Lion or live-music night at The Hop.', type: 'activity' },
-              { time: '20:00', description: 'Stroll back under the stars, then nightcap in the lounge.', type: 'rest' }
-            ]
-          }
-        ],
-        personalizedTips: [
-          'The Italian restaurant next door offers authentic cuisine your parents will appreciate',
-          'Rochdale Market has excellent fresh produce for your mum\'s cooking night',
-          'Public transport connections to Manchester are frequent and reliable',
-          'The White Lion pub has a welcoming atmosphere for international visitors'
-        ],
-        highlights: [
-          'Perfect blend of family celebration and cultural exploration',
-          'Easy access to both countryside and city experiences',
-          'Authentic local dining and home cooking opportunities',
-          'Comfortable base with all amenities for multi-generational travel'
-        ]
-      };
-
-      setSimulationResult(mockResult);
-      setShowResults(true);
     } finally {
       setIsThinking(false);
     }
@@ -228,15 +168,33 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
           setShowResults(false);
           setCurrentStepIndex(0);
           setCurrentStepId('initial');
-          // Reset to just the initial question
-          setSteps([{
-            id: 'initial',
-            question: `Welcome to StayVision's "Simulate Your Stay" at ${property.name}!\n\nDates: Mon 21 July 2025 – Thu 24 July 2025 (3 nights)\nSleeps: ${property.sleeps} | Bedrooms: ${property.bedrooms} | Dogs allowed: ${property.dogsAllowed ? `up to ${property.dogsAllowed}` : 'No'}\n\nTo tailor your story-like preview, tell me a bit about your trip:\n• Who's coming? (e.g. family with young kids, friends, couple + dog)\n• What do you love to do? (e.g. hiking, BBQs, local dining)\n• Any special requests or must-haves? (e.g. pet-friendly cafés, cycle storage)`,
-            userAnswer: '',
-            isCompleted: false
-          }]);
+          // Start fresh with no steps until API responds
+          setSteps([]);
           setSimulationResult(null);
           setAllAnswers({});
+          setIsThinking(true);
+          
+          // Re-initialize the simulation
+          simulationService.startSimulation(property.id)
+            .then(response => {
+              if (response.success) {
+                const initialStep = {
+                  id: response.step,
+                  question: response.question,
+                  userAnswer: '',
+                  isCompleted: false
+                };
+                setSteps([initialStep]);
+                setCurrentStepId(response.step);
+              }
+            })
+            .catch(error => {
+              console.error('Failed to restart simulation:', error);
+              setApiError('Could not restart the simulation. Please try again.');
+            })
+            .finally(() => {
+              setIsThinking(false);
+            });
         }}
       />
     );
@@ -244,6 +202,28 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
 
   return (
     <div className="min-h-screen bg-linear-to-br from-green-100 via-green-50 to-mint-100 flex flex-col relative overflow-hidden">
+      {/* Error Message Display */}
+      {apiError && (
+        <div className="absolute top-24 left-0 right-0 mx-auto w-max z-50">
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-lg shadow-md flex items-center"
+          >
+            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+            {apiError}
+            <button 
+              onClick={() => setApiError(null)} 
+              className="ml-3 text-red-700 hover:text-red-900"
+            >
+              ✕
+            </button>
+          </motion.div>
+        </div>
+      )}
+
       {/* Floating Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
@@ -320,14 +300,15 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
           {/* Question Card */}
           <AnimatePresence mode="wait">
             {!isThinking ? (
-              <motion.div
-                key={currentStep.id}
-                initial={{ opacity: 0, y: 30, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -30, scale: 0.95 }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
-                className="relative"
-              >
+              steps.length > 0 && currentStep ? (
+                <motion.div
+                  key={currentStep.id}
+                  initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -30, scale: 0.95 }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                  className="relative"
+                >
                 {/* Decorative Elements */}
                 <div className="absolute -top-4 -left-4 w-8 h-8 bg-linear-to-br from-green-400 to-green-500 rounded-full opacity-20 blur-sm" />
                 <div className="absolute -bottom-4 -right-4 w-6 h-6 bg-linear-to-br from-mint-400 to-mint-500 rounded-full opacity-30 blur-sm" />
@@ -405,6 +386,7 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
                   </div>
                 </div>
               </motion.div>
+              ) : null
             ) : (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
