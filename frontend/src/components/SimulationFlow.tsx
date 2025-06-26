@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Send, Sparkles } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Property, SimulationStep, SimulationResult } from '../types';
 import { AwazeLogo } from './AwazeLogo';
 import { SimulationResults } from './SimulationResults';
@@ -423,14 +425,16 @@ export const SimulationFlow: React.FC<SimulationFlowProps> = ({ property, onBack
                           <div className="w-1.5 h-1.5 bg-linear-to-r from-green-300 to-green-400 rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
                         </div>
 
-                        <motion.h2 
-                          className="text-xl font-semibold text-gray-800 mb-6 whitespace-pre-line leading-relaxed"
+                        <motion.div 
+                          className="prose prose-green max-w-none text-xl font-semibold text-gray-800 mb-6 leading-relaxed"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ delay: 0.3, duration: 0.8 }}
                         >
-                          {currentStep.question}
-                        </motion.h2>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {currentStep.question}
+                          </ReactMarkdown>
+                        </motion.div>
 
                         <div className="space-y-6">
                           <motion.div

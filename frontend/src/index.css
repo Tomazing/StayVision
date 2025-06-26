@@ -1,1 +1,52 @@
 @import 'tailwindcss';
+
+/* Custom Markdown Styles */
+.prose :where(strong):not(:where([class~="not-prose"] *)) {
+  color: theme('colors.green.600');
+  font-weight: 600;
+}
+
+.prose :where(em):not(:where([class~="not-prose"] *)) {
+  color: theme('colors.green.700');
+  font-style: italic;
+}
+
+.prose :where(a):not(:where([class~="not-prose"] *)) {
+  color: theme('colors.green.600');
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.prose :where(a):hover:not(:where([class~="not-prose"] *)) {
+  color: theme('colors.green.700');
+}
+
+.prose :where(ul > li):not(:where([class~="not-prose"] *))::marker {
+  color: theme('colors.green.500');
+}
+
+.prose :where(ol > li):not(:where([class~="not-prose"] *))::marker {
+  color: theme('colors.green.500');
+  font-weight: 600;
+}
+
+.prose :where(blockquote):not(:where([class~="not-prose"] *)) {
+  font-style: italic;
+  color: theme('colors.green.700');
+  border-left-color: theme('colors.green.300');
+}
+
+/* Remove default margins from prose when inside our custom components */
+.prose > :first-child {
+  margin-top: 0;
+}
+
+.prose > :last-child {
+  margin-bottom: 0;
+}
+
+/* Fix line height for activity descriptions */
+.prose-sm p {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}

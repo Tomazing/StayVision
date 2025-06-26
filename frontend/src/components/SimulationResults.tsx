@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Star, Clock, Plane, Utensils, MapPin, Home, Download, Share2, ThumbsUp, ThumbsDown } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Property, SimulationResult, DayItinerary, Activity } from '../types';
 import { simulationService } from '../services/simulationService';
 
@@ -158,9 +160,11 @@ export const SimulationResults: React.FC<SimulationResultsProps> = ({
                         <div className="font-semibold text-green-600 text-sm mb-1">
                           {activity.time}
                         </div>
-                        <p className="text-gray-700 text-sm leading-relaxed">
-                          {activity.description}
-                        </p>
+                        <div className="prose prose-sm prose-green max-w-none">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {activity.description}
+                          </ReactMarkdown>
+                        </div>
                       </div>
                     </motion.div>
                   ))}
@@ -183,7 +187,11 @@ export const SimulationResults: React.FC<SimulationResultsProps> = ({
               {result.personalizedTips.map((tip, index) => (
                 <div key={index} className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-green-500 rounded-full mt-2 shrink-0" />
-                  <p className="text-gray-700 text-sm">{tip}</p>
+                  <div className="prose prose-sm prose-green max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {tip}
+                    </ReactMarkdown>
+                  </div>
                 </div>
               ))}
             </div>
@@ -200,7 +208,11 @@ export const SimulationResults: React.FC<SimulationResultsProps> = ({
               {result.highlights.map((highlight, index) => (
                 <div key={index} className="flex items-start gap-3">
                   <Star className="w-4 h-4 text-yellow-500 mt-1 shrink-0" />
-                  <p className="text-gray-700 text-sm">{highlight}</p>
+                  <div className="prose prose-sm prose-green max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {highlight}
+                    </ReactMarkdown>
+                  </div>
                 </div>
               ))}
             </div>
