@@ -117,7 +117,7 @@ app.post('/api/feedback', (req, res) => {
 });
 
 // Single endpoint to handle the entire conversation
-app.post('/api/conversation', async (req, res) => {
+app.post('/api/getResponseFromLLM', async (req, res) => {
   try {
     const { propertyId, messages = [], userMessage, systemPrompt: customSystemPrompt } = req.body;
     
@@ -141,33 +141,10 @@ app.post('/api/conversation', async (req, res) => {
     
     // If this is the first message, initialize with property details
     if (conversationHistory.length === 0 || (conversationHistory.length === 1 && userMessage)) {
-      // Create the initial system prompt with property details
-      const defaultSystemPrompt = `You are StayVision, an AI assistant for Awaze that helps potential guests simulate their stay at ${property.name} before booking.
-
-Property details:
-- Name: ${property.name}
-- Location: ${property.location}
-- Sleeps: ${property.sleeps}
-- Bedrooms: ${property.bedrooms}
-- Bathrooms: ${property.bathrooms}
-- Dogs allowed: ${property.dogsAllowed}
-- Features: ${property.features.join(', ')}
-- Nearby attractions: ${property.nearbyAttractions.join(', ')}
-
-You will have a conversation with the user to understand their trip needs. Ask clarifying questions one at a time to gather the following information:
-1. Who's coming? (family members, friends, pets, etc.)
-2. What activities they enjoy (hiking, dining, relaxation, etc.)
-3. Their preferences for transportation (car, public transit)
-4. Any special requests or must-haves
-
-Only move on to the next question after receiving an answer. Keep your questions friendly and conversational. After 3-4 questions, or when you have enough information, generate a personalized 3-day itinerary for their stay, with detailed day-by-day activities.
-
-If this is your first message, begin with a friendly greeting and introduce StayVision.`;
-
       // Use custom system prompt if provided, or default if not
       const systemPrompt = {
         role: 'system',
-        content: customSystemPrompt || defaultSystemPrompt
+        content: customSystemPrompt || getDefaultSystemPrompt(property)
       };
       
       // Insert system prompt at the beginning
@@ -175,12 +152,28 @@ If this is your first message, begin with a friendly greeting and introduce Stay
       
       // If there's no user message yet, add a first assistant message to welcome the user
       if (!userMessage) {
-        conversationHistory.push({
-          role: 'assistant',
-          content: getInitialQuestion(property)
-        });
+        // Instead of using a predefined function, just call OpenAI API for the initial response
+        // This allows the custom prompt to fully control the initial response
+        if (customSystemPrompt) {
+          const completion = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [systemPrompt],
+            max_tokens: 300
+          });
+          
+          conversationHistory.push({
+            role: 'assistant',
+            content: completion.choices[0].message.content
+          });
+        } else {
+          // If no custom prompt, use the default initial question
+          conversationHistory.push({
+            role: 'assistant',
+            content: getInitialQuestion(property)
+          });
+        }
         
-        // Return the initial response without calling the OpenAI API
+        // Return the initial response
         return res.status(200).json({
           success: true,
           property,
@@ -327,6 +320,30 @@ To tailor your story-like preview, tell me a bit about your trip:
 • Who's coming? (e.g. family with young kids, friends, couple + dog)
 • What do you love to do? (e.g. hiking, BBQs, local dining)
 • Any special requests or must-haves? (e.g. pet-friendly cafés, cycle storage)`;
+}
+
+function getDefaultSystemPrompt(property) {
+  return `You are StayVision, an AI assistant for Awaze that helps potential guests simulate their stay at ${property.name} before booking.
+
+Property details:
+- Name: ${property.name}
+- Location: ${property.location}
+- Sleeps: ${property.sleeps}
+- Bedrooms: ${property.bedrooms}
+- Bathrooms: ${property.bathrooms}
+- Dogs allowed: ${property.dogsAllowed}
+- Features: ${property.features.join(', ')}
+- Nearby attractions: ${property.nearbyAttractions.join(', ')}
+
+You will have a conversation with the user to understand their trip needs. Ask clarifying questions one at a time to gather the following information:
+1. Who's coming? (family members, friends, pets, etc.)
+2. What activities they enjoy (hiking, dining, relaxation, etc.)
+3. Their preferences for transportation (car, public transit)
+4. Any special requests or must-haves
+
+Only move on to the next question after receiving an answer. Keep your questions friendly and conversational. After 3-4 questions, or when you have enough information, generate a personalized 3-day itinerary for their stay, with detailed day-by-day activities.
+
+If this is your first message, begin with a friendly greeting and introduce StayVision.`;
 }
 
 function getNextStep(currentStep) {
