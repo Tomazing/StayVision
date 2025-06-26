@@ -123,7 +123,7 @@ export const SimulationResults: React.FC<SimulationResultsProps> = ({
               {property.name} • Mon 21–Thu 24 Jul 2025
             </p>
             <p className="text-gray-500 mt-2">
-              For you, your sister, your mum and dad, using public transport, with one home-cooked night and plenty of café & pub stops
+              Your personalised stay experience is ready!
             </p>
           </div>
         </motion.div>

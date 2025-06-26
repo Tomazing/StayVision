@@ -4,7 +4,7 @@ This is the backend server for the StayVision project, an Awaze Hackathon 2025 e
 
 ## Overview
 
-StayVision's backend provides an API for the "Simulate Your Stay" feature, which uses AI to generate personalized stay experiences based on property information and user preferences.
+StayVision's backend provides an API for the "Simulate Your Stay" feature, which uses AI to generate personalised stay experiences based on property information and user preferences.
 
 ## Features
 

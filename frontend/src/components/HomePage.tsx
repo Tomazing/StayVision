@@ -47,8 +47,8 @@ export const HomePage: React.FC<HomePageProps> = ({ properties, onSelectProperty
             Simulate Your Perfect Stay
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-            Experience your holiday before you book. The AI creates personalized day-by-day previews 
-            tailored to your interests, travel style, and preferences.
+            Experience your holiday before you book. The AI creates personalised day-by-day previews 
+            tailored to your interests, travelling style, and preferences.
           </p>
           <div className="flex justify-center">
             <div className="bg-white rounded-2xl shadow-lg p-6 max-w-md">
@@ -57,7 +57,7 @@ export const HomePage: React.FC<HomePageProps> = ({ properties, onSelectProperty
                   <span className="text-2xl">🎯</span>
                 </div>
                 <div className="text-left">
-                  <h3 className="font-semibold text-gray-800">Personalized Experience</h3>
+                  <h3 className="font-semibold text-gray-800">Personalised Experience</h3>
                   <p className="text-sm text-gray-600">Tailored to your group & interests</p>
                 </div>
               </div>

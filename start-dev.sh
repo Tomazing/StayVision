@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Colors for terminal output
+# Colours for terminal output
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
-NC='\033[0m' # No Color
+NC='\033[0m' # No Colour
 
 echo -e "${GREEN}===== Starting StayVision Development Environment =====${NC}"
 
